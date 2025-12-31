@@ -33,22 +33,33 @@
             to { opacity: 1; }
         }
 
-        /* --- STICKY HEADERS CONFIGURATION --- */
+        /* --- STICKY HEADERS & FOOTERS CONFIGURATION --- */
         
-        /* 1. Header Kolom Utama (Item No, Desc, dll) - TETAP STICKY */
+        /* 1. Header Kolom Utama (Item No, Desc, dll) - TETAP STICKY DI ATAS */
         thead th {
             position: sticky;
             top: 0; 
-            z-index: 50; /* Z-index tinggi agar selalu di atas */
+            z-index: 50; 
             background-color: #f8fafc; /* bg-slate-50 */
             border-bottom: 2px solid #e2e8f0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* 2. Header Grouping (Segment) - DIJADIKAN BIASA (NON-STICKY) */
+        /* 2. Header Grouping (Segment) - BIASA */
         .group-header td {
             position: static; 
             z-index: 10;
+        }
+
+        /* 3. Footer Total - TETAP STICKY DI BAWAH */
+        tfoot td {
+            position: sticky;
+            bottom: 0;
+            z-index: 50;
+            background-color: #f1f5f9; /* bg-slate-100 */
+            border-top: 2px solid #cbd5e1;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+            font-weight: bold;
         }
     </style>
 </head>
@@ -75,7 +86,7 @@
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex flex-col h-full">
         
-        <!-- Stats Cards (Flex-none agar tidak menyusut) -->
+        <!-- Stats Cards (Flex-none) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 flex-none">
             <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                 <div class="flex items-center justify-between">
@@ -125,20 +136,26 @@
             <span class="block sm:inline" id="error-text">Gagal memuat data.</span>
         </div>
 
-        <!-- Data Table Container (Flex-grow untuk mengisi sisa layar) -->
+        <!-- Data Table Container -->
         <div id="data-container" class="hidden fade-in bg-white shadow-md rounded-lg overflow-hidden flex flex-col flex-grow" style="height: calc(100vh - 300px); min-height: 400px;">
             <!-- Header Tools -->
             <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-none flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h3 class="text-lg font-semibold text-gray-700">Detail Persediaan (Group by Segment)</h3>
-                <div class="flex gap-2 w-full sm:w-auto">
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                     <!-- Filter Dropdown Segment -->
+                     <select id="segment-filter" onchange="searchTable()" class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto bg-white">
+                        <option value="">Semua Segment</option>
+                     </select>
+
                      <input type="text" id="search-input" onkeyup="searchTable()" placeholder="Cari Item, Seg, atau Desc..." class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
-                     <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm flex items-center gap-2 transition whitespace-nowrap">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                     
+                     <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm flex items-center gap-2 transition whitespace-nowrap justify-center">
+                        <i class="fa-solid fa-file-excel"></i> <span class="hidden sm:inline">Export Excel</span> <span class="sm:hidden">Excel</span>
                     </button>
                 </div>
             </div>
             
-            <!-- Table Wrapper: Scroll hanya terjadi di sini -->
+            <!-- Table Wrapper -->
             <div class="overflow-auto flex-grow relative bg-white">
                 <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
                     <thead class="bg-slate-50">
@@ -149,12 +166,16 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">UOM</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Qty Actual (Rec)</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Qty Base</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Zone</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Variant</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="bg-white divide-y divide-gray-200">
                         <!-- Rows will be populated by JS -->
                     </tbody>
+                    <!-- Footer untuk Total -->
+                    <tfoot id="table-footer" class="bg-slate-100 text-sm">
+                        <!-- Total row inserted by JS -->
+                    </tfoot>
                 </table>
             </div>
             
@@ -166,56 +187,43 @@
     </main>
 
     <!-- Page Footer -->
-    <footer class="bg-white border-t py-4 flex-none">
+    <footer class="bg-white border-t py-4 flex-none hidden sm:block">
         <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
             <p>&copy; 2024 Dashboard Inventory. Data realtime dari Google Sheets.</p>
         </div>
     </footer>
 
     <script>
-        // --- KONFIGURASI URL SPREADSHEET (Format CSV Export) ---
+        // --- KONFIGURASI URL SPREADSHEET ---
         const SHEET_MAIN = 'https://docs.google.com/spreadsheets/d/1a5GLqM7J2iLtjWErDl1PB47AH0uan_4aA3DZ29C0SEw/export?format=csv&gid=0';
         const SHEET_DESC = 'https://docs.google.com/spreadsheets/d/11-kYb81CtGvf_1ukf_mj6W5Cn_tktqe6blGM4Rc2MZU/export?format=csv&gid=0';
         const SHEET_QTY  = 'https://docs.google.com/spreadsheets/d/1OOhR4CiIgjLNbVdIQsc6bLxz0nCwhr9lDdmL7zm6wIc/export?format=csv&gid=1628010390';
 
-        // Timer Refresh (60 detik)
         const REFRESH_INTERVAL = 60000; 
-
-        // Global Variable untuk menyimpan data saat ini (untuk keperluan export)
         let currentData = [];
 
-        // Fungsi Helper untuk Fetch CSV dan Parse
         function fetchCSV(url) {
             return new Promise((resolve, reject) => {
                 Papa.parse(url, {
                     download: true,
                     header: true,
                     skipEmptyLines: true,
-                    complete: function(results) {
-                        resolve(results); 
-                    },
-                    error: function(err) {
-                        reject(err);
-                    }
+                    complete: function(results) { resolve(results); },
+                    error: function(err) { reject(err); }
                 });
             });
         }
 
-        // Fungsi normalisasi string
         const cleanStr = (str) => str ? str.toString().trim().toUpperCase() : "";
-        
-        // Fungsi parsing angka lebih robust
         const cleanNum = (val) => {
             if (!val) return 0;
             let strVal = val.toString().trim();
             if (strVal === "") return 0;
-            // Hapus koma (thousand separator standar CSV Google)
             let num = parseFloat(strVal.replace(/,/g, ''));
             return isNaN(num) ? 0 : num;
         };
 
         async function loadData() {
-            // UI States
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('data-container').classList.add('hidden');
             document.getElementById('error-msg').classList.add('hidden');
@@ -231,8 +239,6 @@
                 const dataDesc = resDesc.data;
                 const dataQty = resQty.data;
 
-                console.log("Raw Data Loaded", { main: dataMain.length, desc: dataDesc.length, qty: dataQty.length });
-
                 // --- 1. PROSES MASTER ITEM ---
                 const descHeaders = resDesc.meta.fields;
                 let segmentHeaderName = null;
@@ -243,7 +249,6 @@
                 const masterMap = new Map();
                 dataDesc.forEach(row => {
                     let keys = Object.keys(row);
-                    // Deteksi Item No
                     let itemKey = keys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
                     let descKey = keys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
                     
@@ -261,44 +266,25 @@
                     }
                 });
 
-                // --- 2. PROSES DATA QTY ACTUAL (PERBAIKAN LOGIKA) ---
+                // --- 2. PROSES DATA QTY ACTUAL ---
                 const qtyHeaders = resQty.meta.fields;
-                
-                // A. Tentukan Kolom Qty (Kolom ke-9 / Index 8)
                 let qtyColumnName = null;
-                if (qtyHeaders && qtyHeaders.length > 8) {
-                    qtyColumnName = qtyHeaders[8]; 
-                    console.log("Kolom Qty (Ke-9) terdeteksi:", qtyColumnName);
-                } else {
-                    console.warn("Kolom Qty ke-9 tidak ditemukan, menggunakan fallback.");
-                }
-
-                // B. Tentukan Kolom Item No / SKU (Kolom ke-5 / Index 4)
+                if (qtyHeaders && qtyHeaders.length > 8) qtyColumnName = qtyHeaders[8]; 
+                
                 let skuColumnName = null;
-                if (qtyHeaders && qtyHeaders.length > 4) {
-                    skuColumnName = qtyHeaders[4]; // Index 4 adalah Kolom 5
-                    console.log("Kolom SKU (Ke-5) terdeteksi:", skuColumnName);
-                }
+                if (qtyHeaders && qtyHeaders.length > 4) skuColumnName = qtyHeaders[4];
 
                 const qtyMap = new Map();
                 dataQty.forEach(row => {
                     let keys = Object.keys(row);
-                    
-                    // 1. Ambil Nama Kolom Item No / SKU
                     let itemKey = skuColumnName;
-                    
-                    // Fallback: Jika index 4 tidak ada, cari header yang mengandung "SKU"
                     if (!itemKey) {
-                         // Perbaikan di sini: definisikan lower sebelum dipakai atau gunakan langsung
                          itemKey = keys.find(k => {
                             const upper = k.toUpperCase();
                             return upper.trim() === 'SKU' || upper.includes('SKU');
                          });
                     }
-
-                    // 2. Ambil Nama Kolom Qty
                     let qtyKey = qtyColumnName;
-                    // Fallback: Jika index 8 tidak ada, cari header "Qty"
                     if (!qtyKey) {
                         qtyKey = keys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
                     }
@@ -307,7 +293,6 @@
                         const itemNo = cleanStr(row[itemKey]);
                         const val = cleanNum(row[qtyKey]);
                         
-                        // Abaikan item yang kosong atau tidak valid
                         if (itemNo === "" || itemNo === "-") return;
 
                         if (qtyMap.has(itemNo)) {
@@ -318,54 +303,83 @@
                     }
                 });
 
-                // --- 3. FILTER, MAP, & BERSIHKAN DATA UTAMA ---
-                const finalData = dataMain.filter(row => {
+                // --- 3. PROSES AGGREGASI DATA UTAMA (MENGHILANGKAN DUPLIKAT) ---
+                // Kita gunakan Map untuk menggabungkan baris dengan Item No yang sama
+                const aggregatedDataMap = new Map();
+
+                dataMain.forEach(row => {
                     const locKey = Object.keys(row).find(k => k.toLowerCase().includes('location') || k.toLowerCase().includes('loc'));
                     const zoneKey = Object.keys(row).find(k => k.toLowerCase().includes('zone'));
-                    
                     const locVal = locKey ? cleanStr(row[locKey]) : "";
                     const zoneVal = zoneKey ? cleanStr(row[zoneKey]) : "";
 
-                    const isNarogong = locVal === "NAROGONG";
-                    const isZoneValid = zoneVal === "FG E" || zoneVal === "GUDANG FG";
+                    // Filter Lokasi & Zone
+                    if (locVal === "NAROGONG" && (zoneVal === "FG E" || zoneVal === "GUDANG FG")) {
+                        
+                        const itemKey = Object.keys(row).find(k => k.toLowerCase().includes('item'));
+                        const qtyBaseKey = Object.keys(row).find(k => k.toLowerCase().includes('base') || k.toLowerCase().includes('quantity_base'));
+                        const variantKey = Object.keys(row).find(k => k.toLowerCase().includes('variant'));
+                        const uomKey = Object.keys(row).find(k => k.toLowerCase().includes('unit') || k.toLowerCase().includes('uom'));
+                        
+                        const itemNo = itemKey ? row[itemKey] : "-";
+                        const cleanItemNo = cleanStr(itemNo);
+                        const qtyBase = qtyBaseKey ? cleanNum(row[qtyBaseKey]) : 0;
+                        const variant = variantKey ? row[variantKey] : "";
+                        const uom = uomKey ? row[uomKey] : "";
 
-                    return isNarogong && isZoneValid;
-                }).map(row => {
-                    const itemKey = Object.keys(row).find(k => k.toLowerCase().includes('item'));
-                    const uomKey = Object.keys(row).find(k => k.toLowerCase().includes('unit') || k.toLowerCase().includes('uom'));
-                    const qtyBaseKey = Object.keys(row).find(k => k.toLowerCase().includes('base') || k.toLowerCase().includes('quantity_base'));
-                    const zoneKey = Object.keys(row).find(k => k.toLowerCase().includes('zone'));
+                        // Jika Item No belum ada, buat entry baru
+                        if (!aggregatedDataMap.has(cleanItemNo)) {
+                            aggregatedDataMap.set(cleanItemNo, {
+                                item_no: itemNo,
+                                cleanItemNo: cleanItemNo,
+                                uom: uom,
+                                qty_base_total: 0,
+                                variants: new Set(),
+                                zone: zoneVal // Simpan zone pertama yg ketemu
+                            });
+                        }
 
-                    const itemNo = itemKey ? row[itemKey] : "-";
-                    const cleanItemNo = cleanStr(itemNo);
+                        // Update Data Agregat
+                        const entry = aggregatedDataMap.get(cleanItemNo);
+                        entry.qty_base_total += qtyBase;
+                        if (variant && variant.trim() !== "") entry.variants.add(variant);
+                        if (uom && uom !== "") entry.uom = uom; // Update UOM jika sebelumnya kosong
+                    }
+                });
+
+                // --- 4. MAP KE FINAL DATA ---
+                const finalData = Array.from(aggregatedDataMap.values()).map(entry => {
+                    const masterDetails = masterMap.get(entry.cleanItemNo) || { desc: "Deskripsi tidak ditemukan", segment: "UNCATEGORIZED" };
+                    const qtyActual = qtyMap.get(entry.cleanItemNo) || 0;
                     
-                    const masterDetails = masterMap.get(cleanItemNo) || { desc: "Deskripsi tidak ditemukan", segment: "UNCATEGORIZED" };
-                    
-                    const qtyActual = qtyMap.get(cleanItemNo) || 0;
-                    const qtyBase = qtyBaseKey ? cleanNum(row[qtyBaseKey]) : 0;
+                    // Gabungkan variant menjadi string
+                    const variantStr = Array.from(entry.variants).join(", ") || "-";
 
                     return {
                         segment: masterDetails.segment,
-                        item_no: itemNo,
+                        item_no: entry.item_no,
                         desc: masterDetails.desc,
-                        uom: uomKey ? row[uomKey] : "",
+                        uom: entry.uom || "-",
                         qty_actual: qtyActual,
-                        qty_base: qtyBase,
-                        zone: zoneKey ? row[zoneKey] : ""
+                        qty_base: entry.qty_base_total,
+                        variant: variantStr,
+                        zone: entry.zone
                     };
                 }).filter(item => {
+                    // Filter: Tampilkan jika salah satu Qty tidak nol
                     return (item.qty_actual !== 0 || item.qty_base !== 0);
                 });
 
-                // Sort data by Segment
                 finalData.sort((a, b) => {
                     if (a.segment < b.segment) return -1;
                     if (a.segment > b.segment) return 1;
                     return 0;
                 });
 
-                currentData = finalData;
+                // Populate Segment Dropdown
+                populateSegmentFilter(finalData);
 
+                currentData = finalData;
                 renderTable(finalData);
                 updateStats(finalData);
 
@@ -379,14 +393,41 @@
                 console.error("Error fetching data:", error);
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('error-msg').classList.remove('hidden');
-                document.getElementById('error-text').innerText = "Gagal mengambil data. Pastikan link Google Sheet benar dan akses publik.";
+            }
+        }
+
+        function populateSegmentFilter(data) {
+            const select = document.getElementById('segment-filter');
+            // Simpan nilai seleksi saat ini agar tidak reset saat auto-refresh
+            const currentSelection = select.value;
+            
+            // Ambil unique segments dan urutkan
+            const segments = [...new Set(data.map(item => item.segment))].sort();
+            
+            // Reset opsi (tetap simpan opsi "Semua Segment")
+            select.innerHTML = '<option value="">Semua Segment</option>';
+            
+            segments.forEach(seg => {
+                const option = document.createElement('option');
+                option.value = seg;
+                option.textContent = seg;
+                select.appendChild(option);
+            });
+
+            // Restore selection jika masih valid
+            if (segments.includes(currentSelection)) {
+                select.value = currentSelection;
             }
         }
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
+            const tfoot = document.getElementById('table-footer');
             tbody.innerHTML = '';
+            tfoot.innerHTML = '';
 
+            // Note: Data yang masuk ke sini adalah full data.
+            
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada data yang cocok.</td></tr>';
                 return;
@@ -394,8 +435,13 @@
 
             let lastSegment = null;
             let displayIndex = 0;
+            let totalActual = 0;
+            let totalBase = 0;
 
             data.forEach((row, index) => {
+                totalActual += row.qty_actual;
+                totalBase += row.qty_base;
+
                 if (row.segment !== lastSegment) {
                     const trHeader = document.createElement('tr');
                     trHeader.className = "group-header bg-gray-100";
@@ -419,16 +465,27 @@
                 tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${displayIndex}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${row.item_no}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${row.desc}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate md:max-w-none md:whitespace-normal" title="${row.desc}">${row.desc}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${row.uom}</span></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm ${qtyDiffClass}">${row.qty_actual.toLocaleString('id-ID')}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.qty_base.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.zone}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.variant}</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('record-count').innerText = `Menampilkan ${data.length} baris data (Filter Qty != 0)`;
+            // --- RENDER FOOTER TOTAL ---
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-gray-700 font-bold uppercase tracking-wider">TOTAL KESELURUHAN</td>
+                    <td class="px-6 py-3 text-blue-700 font-bold text-sm whitespace-nowrap border-l border-gray-300">${totalActual.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-3 text-gray-900 font-bold text-sm whitespace-nowrap border-l border-gray-300">${totalBase.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-3 border-l border-gray-300"></td>
+                </tr>
+            `;
+
+            // Terapkan filter yang mungkin ada (misal setelah refresh)
+            searchTable();
         }
 
         function updateStats(data) {
@@ -439,24 +496,43 @@
 
         function searchTable() {
             const input = document.getElementById('search-input');
-            const filter = input.value.toUpperCase();
+            const segmentSelect = document.getElementById('segment-filter');
+            
+            const filterText = input.value.toUpperCase();
+            const filterSegment = segmentSelect.value;
+            
             const tbody = document.getElementById('table-body');
+            const tfoot = document.getElementById('table-footer');
             
             const dataRows = tbody.querySelectorAll('tr.data-row');
             const headerRows = tbody.querySelectorAll('tr.group-header');
             
             let visibleSegments = new Set();
+            let visibleCount = 0;
+            let currentFilteredTotalActual = 0;
+            let currentFilteredTotalBase = 0;
 
             dataRows.forEach(row => {
                 const tdItem = row.children[1];
                 const tdDesc = row.children[2];
-                const groupName = row.dataset.segmentGroup; 
+                const groupName = row.dataset.segmentGroup;
                 
+                // Ambil nilai Qty dari kolom (index 4 dan 5)
+                const qtyActualVal = parseFloat(row.children[4].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
+                const qtyBaseVal = parseFloat(row.children[5].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
+
                 let textContent = (groupName || "") + (tdItem ? tdItem.textContent : "") + (tdDesc ? tdDesc.textContent : "");
 
-                if (textContent.toUpperCase().indexOf(filter) > -1) {
+                // Cek filter: Text Matches AND Segment Matches
+                const matchesText = textContent.toUpperCase().indexOf(filterText) > -1;
+                const matchesSegment = filterSegment === "" || groupName === filterSegment;
+
+                if (matchesText && matchesSegment) {
                     row.style.display = "";
                     visibleSegments.add(groupName);
+                    visibleCount++;
+                    currentFilteredTotalActual += qtyActualVal;
+                    currentFilteredTotalBase += qtyBaseVal;
                 } else {
                     row.style.display = "none";
                 }
@@ -469,6 +545,23 @@
                     header.style.display = "none";
                 }
             });
+
+            document.getElementById('record-count').innerText = `Menampilkan ${visibleCount} baris data`;
+
+            // Update Footer Total berdasarkan hasil search
+            if (visibleCount > 0) {
+                 tfoot.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-6 py-3 text-right text-gray-700 font-bold uppercase tracking-wider">TOTAL (FILTERED)</td>
+                        <td class="px-6 py-3 text-blue-700 font-bold text-sm whitespace-nowrap border-l border-gray-300">${currentFilteredTotalActual.toLocaleString('id-ID')}</td>
+                        <td class="px-6 py-3 text-gray-900 font-bold text-sm whitespace-nowrap border-l border-gray-300">${currentFilteredTotalBase.toLocaleString('id-ID')}</td>
+                        <td class="px-6 py-3 border-l border-gray-300"></td>
+                    </tr>
+                `;
+                tfoot.style.display = "";
+            } else {
+                tfoot.style.display = "none";
+            }
         }
 
         function exportExcel() {
@@ -477,7 +570,21 @@
                 return;
             }
 
-            const exportData = currentData.map((row, index) => ({
+            // Saat export, kita cek filter yang aktif
+            const segmentSelect = document.getElementById('segment-filter');
+            const filterSegment = segmentSelect.value;
+            
+            // Filter data sesuai dropdown
+            let dataToExport = currentData;
+            
+            if (filterSegment !== "") {
+                dataToExport = currentData.filter(item => item.segment === filterSegment);
+            }
+
+            const totalActual = dataToExport.reduce((acc, curr) => acc + curr.qty_actual, 0);
+            const totalBase = dataToExport.reduce((acc, curr) => acc + curr.qty_base, 0);
+
+            const exportData = dataToExport.map((row, index) => ({
                 "No": index + 1,
                 "Segment": row.segment,
                 "Item No": row.item_no,
@@ -485,12 +592,22 @@
                 "UOM": row.uom,
                 "Qty Actual": row.qty_actual,
                 "Qty Base": row.qty_base,
-                "Zone": row.zone
+                "Variant": row.variant
             }));
 
+            // Append Total Row
+            exportData.push({
+                "No": "",
+                "Segment": "TOTAL",
+                "Item No": "",
+                "Description": "",
+                "UOM": "",
+                "Qty Actual": totalActual,
+                "Qty Base": totalBase,
+                "Variant": ""
+            });
+
             const csv = Papa.unparse(exportData);
-            
-            // Perbaikan BOM untuk Excel
             const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
