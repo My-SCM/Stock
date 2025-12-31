@@ -46,8 +46,6 @@
         }
 
         /* 2. Header Grouping (Segment) - DIJADIKAN BIASA (NON-STICKY) */
-        /* Catatan: Fitur sticky double sering rusak (tumpang tindih) di preview mobile/github.
-           Kita matikan sticky di sini agar tampilan bersih, tapi header kolom tetap sticky. */
         .group-header td {
             position: static; 
             z-index: 10;
@@ -205,9 +203,14 @@
 
         // Fungsi normalisasi string
         const cleanStr = (str) => str ? str.toString().trim().toUpperCase() : "";
+        
+        // Fungsi parsing angka lebih robust
         const cleanNum = (val) => {
             if (!val) return 0;
-            let num = parseFloat(val.toString().replace(/,/g, ''));
+            let strVal = val.toString().trim();
+            if (strVal === "") return 0;
+            // Hapus koma (thousand separator standar CSV Google)
+            let num = parseFloat(strVal.replace(/,/g, ''));
             return isNaN(num) ? 0 : num;
         };
 
@@ -240,6 +243,7 @@
                 const masterMap = new Map();
                 dataDesc.forEach(row => {
                     let keys = Object.keys(row);
+                    // Deteksi Item No
                     let itemKey = keys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
                     let descKey = keys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
                     
@@ -257,17 +261,55 @@
                     }
                 });
 
-                // --- 2. PROSES DATA QTY ACTUAL ---
+                // --- 2. PROSES DATA QTY ACTUAL (PERBAIKAN LOGIKA) ---
+                const qtyHeaders = resQty.meta.fields;
+                
+                // A. Tentukan Kolom Qty (Kolom ke-9 / Index 8)
+                let qtyColumnName = null;
+                if (qtyHeaders && qtyHeaders.length > 8) {
+                    qtyColumnName = qtyHeaders[8]; 
+                    console.log("Kolom Qty (Ke-9) terdeteksi:", qtyColumnName);
+                } else {
+                    console.warn("Kolom Qty ke-9 tidak ditemukan, menggunakan fallback.");
+                }
+
+                // B. Tentukan Kolom Item No / SKU (Kolom ke-5 / Index 4)
+                let skuColumnName = null;
+                if (qtyHeaders && qtyHeaders.length > 4) {
+                    skuColumnName = qtyHeaders[4]; // Index 4 adalah Kolom 5
+                    console.log("Kolom SKU (Ke-5) terdeteksi:", skuColumnName);
+                }
+
                 const qtyMap = new Map();
                 dataQty.forEach(row => {
                     let keys = Object.keys(row);
-                    let itemKey = keys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
-                    let qtyKey = keys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
+                    
+                    // 1. Ambil Nama Kolom Item No / SKU
+                    let itemKey = skuColumnName;
+                    
+                    // Fallback: Jika index 4 tidak ada, cari header yang mengandung "SKU"
+                    if (!itemKey) {
+                         // Perbaikan di sini: definisikan lower sebelum dipakai atau gunakan langsung
+                         itemKey = keys.find(k => {
+                            const upper = k.toUpperCase();
+                            return upper.trim() === 'SKU' || upper.includes('SKU');
+                         });
+                    }
+
+                    // 2. Ambil Nama Kolom Qty
+                    let qtyKey = qtyColumnName;
+                    // Fallback: Jika index 8 tidak ada, cari header "Qty"
+                    if (!qtyKey) {
+                        qtyKey = keys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
+                    }
 
                     if (itemKey && qtyKey && row[itemKey]) {
                         const itemNo = cleanStr(row[itemKey]);
                         const val = cleanNum(row[qtyKey]);
                         
+                        // Abaikan item yang kosong atau tidak valid
+                        if (itemNo === "" || itemNo === "-") return;
+
                         if (qtyMap.has(itemNo)) {
                             qtyMap.set(itemNo, qtyMap.get(itemNo) + val);
                         } else {
@@ -448,7 +490,8 @@
 
             const csv = Papa.unparse(exportData);
             
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            // Perbaikan BOM untuk Excel
+            const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             
