@@ -35,30 +35,26 @@
 
         /* --- STICKY HEADERS & FOOTERS CONFIGURATION --- */
         
-        /* 1. Header Kolom Utama (Item No, Desc, dll) - TETAP STICKY DI ATAS */
+        /* 1. Header Kolom Utama - STICKY DI BAWAH NAVBAR */
         thead th {
             position: sticky;
-            top: 0; 
-            z-index: 50; 
-            background-color: #f8fafc; /* bg-slate-50 */
-            border-bottom: 2px solid #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            top: 4rem; 
+            z-index: 40; 
+            /* Menggunakan warna solid yang kuat untuk menutupi konten di bawahnya saat scroll */
+            background-color: #f1f5f9; /* bg-slate-100 yang lebih pekat */
+            border-bottom: 2px solid #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Shadow lebih tegas */
+            background-clip: padding-box; /* Mencegah border transparan */
         }
 
-        /* 2. Header Grouping (Segment) - BIASA */
-        .group-header td {
-            position: static; 
-            z-index: 10;
-        }
-
-        /* 3. Footer Total - TETAP STICKY DI BAWAH */
+        /* 3. Footer Total - STICKY DI BAWAH LAYAR */
         tfoot td {
             position: sticky;
             bottom: 0;
-            z-index: 50;
+            z-index: 40;
             background-color: #f1f5f9; /* bg-slate-100 */
-            border-top: 2px solid #cbd5e1;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+            border-top: 2px solid #94a3b8;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
             font-weight: bold;
         }
     </style>
@@ -66,7 +62,7 @@
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
 
     <!-- Navbar / Header -->
-    <nav class="bg-blue-900 text-white shadow-lg sticky top-0 z-50 flex-none">
+    <nav class="bg-blue-900 text-white shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
@@ -75,7 +71,7 @@
                 </div>
                 <div class="flex items-center text-sm">
                     <span id="last-update" class="mr-4 text-gray-300 hidden sm:block">Update: -</span>
-                    <button onclick="loadData()" class="bg-blue-700 hover:bg-blue-600 px-3 py-1 rounded transition flex items-center gap-2">
+                    <button onclick="loadData()" class="bg-blue-700 hover:bg-blue-600 px-3 py-1 rounded transition flex items-center gap-2 shadow-sm border border-blue-600">
                         <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
                     </button>
                 </div>
@@ -84,10 +80,10 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex flex-col h-full">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- Stats Cards (Flex-none) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 flex-none">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                 <div class="flex items-center justify-between">
                     <div>
@@ -137,59 +133,86 @@
         </div>
 
         <!-- Data Table Container -->
-        <div id="data-container" class="hidden fade-in bg-white shadow-md rounded-lg overflow-hidden flex flex-col flex-grow" style="height: calc(100vh - 300px); min-height: 400px;">
+        <div id="data-container" class="hidden fade-in bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
             <!-- Header Tools -->
-            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-none flex flex-col sm:flex-row justify-between items-center gap-4">
-                <h3 class="text-lg font-semibold text-gray-700">Detail Persediaan (Group by Segment)</h3>
-                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                     <!-- Filter Dropdown Segment -->
-                     <select id="segment-filter" onchange="searchTable()" class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto bg-white">
-                        <option value="">Semua Segment</option>
-                     </select>
+            <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row justify-between items-center gap-4">
+                <!-- Title Section -->
+                <div class="flex items-center gap-3 w-full lg:w-auto">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                        <i class="fa-solid fa-table-list"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">Detail Persediaan</h3>
+                        <p class="text-xs text-gray-500 hidden sm:block">Data stok realtime terupdate</p>
+                    </div>
+                </div>
 
-                     <input type="text" id="search-input" onkeyup="searchTable()" placeholder="Cari Item, Seg, atau Desc..." class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                <!-- Tools Section (Filter, Search, Export) -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                     <!-- Filter Dropdown Segment -->
+                     <div class="relative w-full sm:w-48 group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-hover:text-blue-500 transition-colors">
+                            <i class="fa-solid fa-filter text-xs"></i>
+                        </div>
+                        <select id="segment-filter" onchange="searchTable()" class="pl-9 pr-8 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-white shadow-sm transition-all hover:border-gray-400 cursor-pointer appearance-none text-gray-700 font-medium">
+                            <option value="">Semua Segment</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                     </div>
+
+                     <!-- Search Input -->
+                     <div class="relative w-full sm:w-64 group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <input type="text" id="search-input" onkeyup="searchTable()" placeholder="Cari Item, SKU, atau Nama..." class="pl-10 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full shadow-sm transition-all hover:border-gray-400 text-gray-700">
+                     </div>
                      
-                     <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm flex items-center gap-2 transition whitespace-nowrap justify-center">
-                        <i class="fa-solid fa-file-excel"></i> <span class="hidden sm:inline">Export Excel</span> <span class="sm:hidden">Excel</span>
+                     <!-- Export Button -->
+                     <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md justify-center whitespace-nowrap transform active:scale-95">
+                        <i class="fa-solid fa-file-excel"></i> <span class="font-medium">Export Excel</span>
                     </button>
                 </div>
             </div>
             
-            <!-- Table Wrapper -->
-            <div class="overflow-auto flex-grow relative bg-white">
+            <!-- Table Wrapper (Horizontal Scroll Only) -->
+            <div class="overflow-x-auto bg-white">
                 <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
-                    <thead class="bg-slate-50">
+                    <thead class="bg-slate-100">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">No</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Item No</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Description</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">UOM</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Qty Actual (Rec)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Qty Base</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Variant</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">No</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Segment</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Item No</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Description</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">UOM</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Actual (Rec)</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Base</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Variance</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="bg-white divide-y divide-gray-200">
                         <!-- Rows will be populated by JS -->
                     </tbody>
                     <!-- Footer untuk Total -->
-                    <tfoot id="table-footer" class="bg-slate-100 text-sm">
+                    <tfoot id="table-footer" class="bg-slate-100 text-sm border-t-2 border-gray-300">
                         <!-- Total row inserted by JS -->
                     </tfoot>
                 </table>
             </div>
             
             <!-- Footer Count -->
-            <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex-none" id="record-count">
+            <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-500" id="record-count">
                 Menampilkan 0 baris
             </div>
         </div>
     </main>
 
     <!-- Page Footer -->
-    <footer class="bg-white border-t py-4 flex-none hidden sm:block">
+    <footer class="bg-white border-t py-4 hidden sm:block">
         <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
-            <p>&copy; 2024 Dashboard Inventory. Data realtime dari Google Sheets.</p>
+            <p>&copy; 2025 Dashboard Inventory by GuoKing_. Data realtime dari Google Sheets.</p>
         </div>
     </footer>
 
@@ -240,110 +263,107 @@
                 const dataQty = resQty.data;
 
                 // --- 1. PROSES MASTER ITEM ---
-                const descHeaders = resDesc.meta.fields;
+                const descHeaders = resDesc.meta.fields || [];
+                const descKeys = dataDesc.length > 0 ? Object.keys(dataDesc[0]) : [];
+                let descItemKey = descKeys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
+                let descDescKey = descKeys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
+                
                 let segmentHeaderName = null;
                 if (descHeaders && descHeaders.length > 6) {
                     segmentHeaderName = descHeaders[6]; // Kolom G (Index 6)
                 }
 
+                // Buat Master Map
                 const masterMap = new Map();
                 dataDesc.forEach(row => {
-                    let keys = Object.keys(row);
-                    let itemKey = keys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
-                    let descKey = keys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
-                    
-                    if (itemKey && row[itemKey]) {
+                    if (descItemKey && row[descItemKey]) {
                         let segmentVal = "-";
                         if (segmentHeaderName && row[segmentHeaderName]) {
                             segmentVal = row[segmentHeaderName];
                         }
                         if (!segmentVal || segmentVal.trim() === "") segmentVal = "UNCATEGORIZED";
 
-                        masterMap.set(cleanStr(row[itemKey]), {
-                            desc: descKey ? row[descKey] : "Deskripsi tidak ditemukan",
+                        masterMap.set(cleanStr(row[descItemKey]), {
+                            desc: descDescKey ? row[descDescKey] : "Deskripsi tidak ditemukan",
                             segment: segmentVal
                         });
                     }
                 });
 
                 // --- 2. PROSES DATA QTY ACTUAL ---
-                const qtyHeaders = resQty.meta.fields;
+                const qtyHeaders = resQty.meta.fields || [];
                 let qtyColumnName = null;
                 if (qtyHeaders && qtyHeaders.length > 8) qtyColumnName = qtyHeaders[8]; 
                 
                 let skuColumnName = null;
                 if (qtyHeaders && qtyHeaders.length > 4) skuColumnName = qtyHeaders[4];
 
+                const qtyKeys = dataQty.length > 0 ? Object.keys(dataQty[0]) : [];
+                
+                // Cari nama kolom exact jika index tidak ketemu
+                let qtyItemKey = skuColumnName;
+                if (!qtyItemKey) {
+                     qtyItemKey = qtyKeys.find(k => {
+                        const upper = k.toUpperCase();
+                        return upper.trim() === 'SKU' || upper.includes('SKU');
+                     });
+                }
+                
+                let qtyValKey = qtyColumnName;
+                if (!qtyValKey) {
+                    qtyValKey = qtyKeys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
+                }
+
                 const qtyMap = new Map();
                 dataQty.forEach(row => {
-                    let keys = Object.keys(row);
-                    let itemKey = skuColumnName;
-                    if (!itemKey) {
-                         itemKey = keys.find(k => {
-                            const upper = k.toUpperCase();
-                            return upper.trim() === 'SKU' || upper.includes('SKU');
-                         });
-                    }
-                    let qtyKey = qtyColumnName;
-                    if (!qtyKey) {
-                        qtyKey = keys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
-                    }
-
-                    if (itemKey && qtyKey && row[itemKey]) {
-                        const itemNo = cleanStr(row[itemKey]);
-                        const val = cleanNum(row[qtyKey]);
+                    if (qtyItemKey && qtyValKey && row[qtyItemKey]) {
+                        const itemNo = cleanStr(row[qtyItemKey]);
+                        const val = cleanNum(row[qtyValKey]);
                         
-                        if (itemNo === "" || itemNo === "-") return;
-
-                        if (qtyMap.has(itemNo)) {
-                            qtyMap.set(itemNo, qtyMap.get(itemNo) + val);
-                        } else {
-                            qtyMap.set(itemNo, val);
+                        if (itemNo !== "" && itemNo !== "-") {
+                            if (qtyMap.has(itemNo)) {
+                                qtyMap.set(itemNo, qtyMap.get(itemNo) + val);
+                            } else {
+                                qtyMap.set(itemNo, val);
+                            }
                         }
                     }
                 });
 
-                // --- 3. PROSES AGGREGASI DATA UTAMA (MENGHILANGKAN DUPLIKAT) ---
-                // Kita gunakan Map untuk menggabungkan baris dengan Item No yang sama
+                // --- 3. PROSES AGGREGASI DATA UTAMA ---
+                const mainKeys = dataMain.length > 0 ? Object.keys(dataMain[0]) : [];
+                const mainLocKey = mainKeys.find(k => k.toLowerCase().includes('location') || k.toLowerCase().includes('loc'));
+                const mainZoneKey = mainKeys.find(k => k.toLowerCase().includes('zone'));
+                const mainItemKey = mainKeys.find(k => k.toLowerCase().includes('item'));
+                const mainQtyBaseKey = mainKeys.find(k => k.toLowerCase().includes('base') || k.toLowerCase().includes('quantity_base'));
+                const mainUomKey = mainKeys.find(k => k.toLowerCase().includes('unit') || k.toLowerCase().includes('uom'));
+
                 const aggregatedDataMap = new Map();
 
+                // Loop data utama
                 dataMain.forEach(row => {
-                    const locKey = Object.keys(row).find(k => k.toLowerCase().includes('location') || k.toLowerCase().includes('loc'));
-                    const zoneKey = Object.keys(row).find(k => k.toLowerCase().includes('zone'));
-                    const locVal = locKey ? cleanStr(row[locKey]) : "";
-                    const zoneVal = zoneKey ? cleanStr(row[zoneKey]) : "";
+                    const locVal = mainLocKey ? cleanStr(row[mainLocKey]) : "";
+                    const zoneVal = mainZoneKey ? cleanStr(row[mainZoneKey]) : "";
 
-                    // Filter Lokasi & Zone
                     if (locVal === "NAROGONG" && (zoneVal === "FG E" || zoneVal === "GUDANG FG")) {
-                        
-                        const itemKey = Object.keys(row).find(k => k.toLowerCase().includes('item'));
-                        const qtyBaseKey = Object.keys(row).find(k => k.toLowerCase().includes('base') || k.toLowerCase().includes('quantity_base'));
-                        const variantKey = Object.keys(row).find(k => k.toLowerCase().includes('variant'));
-                        const uomKey = Object.keys(row).find(k => k.toLowerCase().includes('unit') || k.toLowerCase().includes('uom'));
-                        
-                        const itemNo = itemKey ? row[itemKey] : "-";
+                        const itemNo = mainItemKey ? row[mainItemKey] : "-";
                         const cleanItemNo = cleanStr(itemNo);
-                        const qtyBase = qtyBaseKey ? cleanNum(row[qtyBaseKey]) : 0;
-                        const variant = variantKey ? row[variantKey] : "";
-                        const uom = uomKey ? row[uomKey] : "";
+                        const qtyBase = mainQtyBaseKey ? cleanNum(row[mainQtyBaseKey]) : 0;
+                        const uom = mainUomKey ? row[mainUomKey] : "";
 
-                        // Jika Item No belum ada, buat entry baru
                         if (!aggregatedDataMap.has(cleanItemNo)) {
                             aggregatedDataMap.set(cleanItemNo, {
                                 item_no: itemNo,
                                 cleanItemNo: cleanItemNo,
                                 uom: uom,
                                 qty_base_total: 0,
-                                variants: new Set(),
-                                zone: zoneVal // Simpan zone pertama yg ketemu
+                                zone: zoneVal
                             });
                         }
 
-                        // Update Data Agregat
                         const entry = aggregatedDataMap.get(cleanItemNo);
                         entry.qty_base_total += qtyBase;
-                        if (variant && variant.trim() !== "") entry.variants.add(variant);
-                        if (uom && uom !== "") entry.uom = uom; // Update UOM jika sebelumnya kosong
+                        if (uom && uom !== "") entry.uom = uom;
                     }
                 });
 
@@ -352,8 +372,8 @@
                     const masterDetails = masterMap.get(entry.cleanItemNo) || { desc: "Deskripsi tidak ditemukan", segment: "UNCATEGORIZED" };
                     const qtyActual = qtyMap.get(entry.cleanItemNo) || 0;
                     
-                    // Gabungkan variant menjadi string
-                    const variantStr = Array.from(entry.variants).join(", ") || "-";
+                    // Hitung Variance
+                    const variance = qtyActual - entry.qty_base_total;
 
                     return {
                         segment: masterDetails.segment,
@@ -362,23 +382,21 @@
                         uom: entry.uom || "-",
                         qty_actual: qtyActual,
                         qty_base: entry.qty_base_total,
-                        variant: variantStr,
+                        variance: variance,
                         zone: entry.zone
                     };
                 }).filter(item => {
-                    // Filter: Tampilkan jika salah satu Qty tidak nol
                     return (item.qty_actual !== 0 || item.qty_base !== 0);
                 });
 
+                // Sort data by Segment then Item No
                 finalData.sort((a, b) => {
                     if (a.segment < b.segment) return -1;
                     if (a.segment > b.segment) return 1;
-                    return 0;
+                    return a.item_no.localeCompare(b.item_no);
                 });
 
-                // Populate Segment Dropdown
                 populateSegmentFilter(finalData);
-
                 currentData = finalData;
                 renderTable(finalData);
                 updateStats(finalData);
@@ -398,13 +416,9 @@
 
         function populateSegmentFilter(data) {
             const select = document.getElementById('segment-filter');
-            // Simpan nilai seleksi saat ini agar tidak reset saat auto-refresh
             const currentSelection = select.value;
-            
-            // Ambil unique segments dan urutkan
             const segments = [...new Set(data.map(item => item.segment))].sort();
             
-            // Reset opsi (tetap simpan opsi "Semua Segment")
             select.innerHTML = '<option value="">Semua Segment</option>';
             
             segments.forEach(seg => {
@@ -414,7 +428,6 @@
                 select.appendChild(option);
             });
 
-            // Restore selection jika masih valid
             if (segments.includes(currentSelection)) {
                 select.value = currentSelection;
             }
@@ -426,65 +439,77 @@
             tbody.innerHTML = '';
             tfoot.innerHTML = '';
 
-            // Note: Data yang masuk ke sini adalah full data.
-            
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada data yang cocok.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Tidak ada data yang cocok.</td></tr>';
                 return;
             }
 
-            let lastSegment = null;
             let displayIndex = 0;
             let totalActual = 0;
             let totalBase = 0;
+            let totalVariance = 0;
 
             data.forEach((row, index) => {
                 totalActual += row.qty_actual;
                 totalBase += row.qty_base;
-
-                if (row.segment !== lastSegment) {
-                    const trHeader = document.createElement('tr');
-                    trHeader.className = "group-header bg-gray-100";
-                    trHeader.dataset.segment = row.segment; 
-                    trHeader.innerHTML = `
-                        <td colspan="7" class="px-6 py-2 border-b border-blue-200 bg-blue-50 text-blue-900 font-bold">
-                            <i class="fa-solid fa-layer-group mr-2"></i> ${row.segment}
-                        </td>
-                    `;
-                    tbody.appendChild(trHeader);
-                    lastSegment = row.segment;
-                }
+                totalVariance += row.variance;
 
                 displayIndex++;
                 const tr = document.createElement('tr');
-                tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 data-row' : 'bg-gray-50 hover:bg-gray-100 data-row';
+                tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 data-row transition-colors' : 'bg-gray-50 hover:bg-gray-100 data-row transition-colors';
                 tr.dataset.segmentGroup = row.segment; 
 
-                const qtyDiffClass = (row.qty_base !== row.qty_actual) ? 'text-amber-600 font-semibold' : 'text-gray-900';
+                // Styling untuk Variance
+                let varianceClass = 'text-gray-900';
+                let varianceIcon = '';
+                let varianceTooltip = '';
+                let cursorStyle = '';
+
+                if (row.variance < 0) {
+                    varianceClass = 'text-red-600 font-bold';
+                    varianceIcon = '<i class="fa-solid fa-arrow-down mr-1 text-xs"></i>';
+                } else if (row.variance > 0) {
+                    varianceClass = 'text-green-600 font-bold';
+                    varianceIcon = '<i class="fa-solid fa-arrow-up mr-1 text-xs"></i>';
+                }
+
+                // Tambahkan tooltip jika ada selisih
+                if (row.variance !== 0) {
+                    varianceTooltip = 'Perbedaan Qty disebabkan update di stock card tidak real time. Saat akhir shift baru akan diupdate dan dipastikan stock balance antara actual dan sistem.';
+                    cursorStyle = 'cursor-help border-b border-dotted border-gray-400';
+                }
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${displayIndex}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${row.item_no}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate md:max-w-none md:whitespace-normal" title="${row.desc}">${row.desc}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${row.uom}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm ${qtyDiffClass}">${row.qty_actual.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.qty_base.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.variant}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono border-r border-gray-100">${displayIndex}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-800 font-bold uppercase tracking-wide border-r border-gray-100"><span class="bg-blue-100 px-2 py-1 rounded text-xs">${row.segment}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 border-r border-gray-100">${row.item_no}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate md:max-w-none md:whitespace-normal border-r border-gray-100" title="${row.desc}">${row.desc}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${row.uom}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_actual.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_base.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${varianceClass} ${cursorStyle}" title="${varianceTooltip}">
+                        ${varianceIcon}${row.variance.toLocaleString('id-ID')}
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
 
             // --- RENDER FOOTER TOTAL ---
+            // Styling Total Variance
+            let totalVarClass = 'text-gray-900';
+            if (totalVariance < 0) totalVarClass = 'text-red-700';
+            else if (totalVariance > 0) totalVarClass = 'text-green-700';
+
             tfoot.innerHTML = `
                 <tr>
-                    <td colspan="4" class="px-6 py-3 text-right text-gray-700 font-bold uppercase tracking-wider">TOTAL KESELURUHAN</td>
-                    <td class="px-6 py-3 text-blue-700 font-bold text-sm whitespace-nowrap border-l border-gray-300">${totalActual.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-3 text-gray-900 font-bold text-sm whitespace-nowrap border-l border-gray-300">${totalBase.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-3 border-l border-gray-300"></td>
+                    <td colspan="5" class="px-6 py-4 text-right text-gray-800 font-extrabold uppercase tracking-wider text-sm">TOTAL KESELURUHAN</td>
+                    <td class="px-6 py-4 text-blue-800 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-blue-50">${totalActual.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 text-gray-900 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-100">${totalBase.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 ${totalVarClass} font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-50">${totalVariance.toLocaleString('id-ID')}</td>
                 </tr>
             `;
 
-            // Terapkan filter yang mungkin ada (misal setelah refresh)
+            // Terapkan filter yang mungkin ada
             searchTable();
         }
 
@@ -505,57 +530,53 @@
             const tfoot = document.getElementById('table-footer');
             
             const dataRows = tbody.querySelectorAll('tr.data-row');
-            const headerRows = tbody.querySelectorAll('tr.group-header');
             
-            let visibleSegments = new Set();
             let visibleCount = 0;
             let currentFilteredTotalActual = 0;
             let currentFilteredTotalBase = 0;
+            let currentFilteredTotalVariance = 0;
 
             dataRows.forEach(row => {
-                const tdItem = row.children[1];
-                const tdDesc = row.children[2];
-                const groupName = row.dataset.segmentGroup;
+                const tdItem = row.children[2];
+                const tdDesc = row.children[3];
+                const groupName = row.dataset.segmentGroup; 
                 
-                // Ambil nilai Qty dari kolom (index 4 dan 5)
-                const qtyActualVal = parseFloat(row.children[4].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
-                const qtyBaseVal = parseFloat(row.children[5].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
+                // Ambil nilai Qty dari kolom index 5, 6
+                const qtyActualVal = parseFloat(row.children[5].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
+                const qtyBaseVal = parseFloat(row.children[6].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
+                // Hitung ulang variance biar akurat
+                const varianceVal = qtyActualVal - qtyBaseVal;
 
                 let textContent = (groupName || "") + (tdItem ? tdItem.textContent : "") + (tdDesc ? tdDesc.textContent : "");
 
-                // Cek filter: Text Matches AND Segment Matches
                 const matchesText = textContent.toUpperCase().indexOf(filterText) > -1;
                 const matchesSegment = filterSegment === "" || groupName === filterSegment;
 
                 if (matchesText && matchesSegment) {
                     row.style.display = "";
-                    visibleSegments.add(groupName);
                     visibleCount++;
                     currentFilteredTotalActual += qtyActualVal;
                     currentFilteredTotalBase += qtyBaseVal;
+                    currentFilteredTotalVariance += varianceVal;
                 } else {
                     row.style.display = "none";
                 }
             });
 
-            headerRows.forEach(header => {
-                if (visibleSegments.has(header.dataset.segment)) {
-                    header.style.display = "";
-                } else {
-                    header.style.display = "none";
-                }
-            });
-
             document.getElementById('record-count').innerText = `Menampilkan ${visibleCount} baris data`;
 
-            // Update Footer Total berdasarkan hasil search
+            // Style Total Filtered Variance
+            let totalVarClass = 'text-gray-900';
+            if (currentFilteredTotalVariance < 0) totalVarClass = 'text-red-700';
+            else if (currentFilteredTotalVariance > 0) totalVarClass = 'text-green-700';
+
             if (visibleCount > 0) {
                  tfoot.innerHTML = `
                     <tr>
-                        <td colspan="4" class="px-6 py-3 text-right text-gray-700 font-bold uppercase tracking-wider">TOTAL (FILTERED)</td>
-                        <td class="px-6 py-3 text-blue-700 font-bold text-sm whitespace-nowrap border-l border-gray-300">${currentFilteredTotalActual.toLocaleString('id-ID')}</td>
-                        <td class="px-6 py-3 text-gray-900 font-bold text-sm whitespace-nowrap border-l border-gray-300">${currentFilteredTotalBase.toLocaleString('id-ID')}</td>
-                        <td class="px-6 py-3 border-l border-gray-300"></td>
+                        <td colspan="5" class="px-6 py-4 text-right text-gray-800 font-extrabold uppercase tracking-wider text-sm">TOTAL (FILTERED)</td>
+                        <td class="px-6 py-4 text-blue-800 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-blue-50">${currentFilteredTotalActual.toLocaleString('id-ID')}</td>
+                        <td class="px-6 py-4 text-gray-900 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-100">${currentFilteredTotalBase.toLocaleString('id-ID')}</td>
+                        <td class="px-6 py-4 ${totalVarClass} font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-50">${currentFilteredTotalVariance.toLocaleString('id-ID')}</td>
                     </tr>
                 `;
                 tfoot.style.display = "";
@@ -570,11 +591,9 @@
                 return;
             }
 
-            // Saat export, kita cek filter yang aktif
             const segmentSelect = document.getElementById('segment-filter');
             const filterSegment = segmentSelect.value;
             
-            // Filter data sesuai dropdown
             let dataToExport = currentData;
             
             if (filterSegment !== "") {
@@ -583,6 +602,7 @@
 
             const totalActual = dataToExport.reduce((acc, curr) => acc + curr.qty_actual, 0);
             const totalBase = dataToExport.reduce((acc, curr) => acc + curr.qty_base, 0);
+            const totalVariance = dataToExport.reduce((acc, curr) => acc + curr.variance, 0);
 
             const exportData = dataToExport.map((row, index) => ({
                 "No": index + 1,
@@ -592,10 +612,9 @@
                 "UOM": row.uom,
                 "Qty Actual": row.qty_actual,
                 "Qty Base": row.qty_base,
-                "Variant": row.variant
+                "Variance": row.variance
             }));
 
-            // Append Total Row
             exportData.push({
                 "No": "",
                 "Segment": "TOTAL",
@@ -604,7 +623,7 @@
                 "UOM": "",
                 "Qty Actual": totalActual,
                 "Qty Base": totalBase,
-                "Variant": ""
+                "Variance": totalVariance
             });
 
             const csv = Papa.unparse(exportData);
