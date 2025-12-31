@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Inventory Narogong</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse untuk membaca CSV Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Font Awesome untuk Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Animasi Loading */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* --- STICKY HEADERS CONFIGURATION --- */
+        
+        /* 1. Header Kolom Utama (Item No, Desc, dll) - TETAP STICKY */
+        thead th {
+            position: sticky;
+            top: 0; 
+            z-index: 50; /* Z-index tinggi agar selalu di atas */
+            background-color: #f8fafc; /* bg-slate-50 */
+            border-bottom: 2px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* 2. Header Grouping (Segment) - DIJADIKAN BIASA (NON-STICKY) */
+        /* Catatan: Fitur sticky double sering rusak (tumpang tindih) di preview mobile/github.
+           Kita matikan sticky di sini agar tampilan bersih, tapi header kolom tetap sticky. */
+        .group-header td {
+            position: static; 
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Navbar / Header -->
+    <nav class="bg-blue-900 text-white shadow-lg sticky top-0 z-50 flex-none">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-boxes-stacked text-2xl mr-3"></i>
+                    <h1 class="font-bold text-xl tracking-wide">Narogong Inventory Dashboard</h1>
+                </div>
+                <div class="flex items-center text-sm">
+                    <span id="last-update" class="mr-4 text-gray-300 hidden sm:block">Update: -</span>
+                    <button onclick="loadData()" class="bg-blue-700 hover:bg-blue-600 px-3 py-1 rounded transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow flex flex-col h-full">
+        
+        <!-- Stats Cards (Flex-none agar tidak menyusut) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 flex-none">
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Total Item</p>
+                        <h2 class="text-3xl font-bold text-gray-800" id="total-items">0</h2>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full text-blue-600">
+                        <i class="fa-solid fa-list-ol text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Total Qty Base</p>
+                        <h2 class="text-3xl font-bold text-gray-800" id="total-qty-base">0</h2>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full text-green-600">
+                        <i class="fa-solid fa-cube text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Lokasi Filter</p>
+                        <h2 class="text-lg font-bold text-gray-800">NAROGONG</h2>
+                        <p class="text-xs text-gray-500">Zone: FG E & GUDANG FG</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full text-purple-600">
+                        <i class="fa-solid fa-location-dot text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="flex flex-col items-center justify-center py-12">
+            <div class="spinner mb-4"></div>
+            <p class="text-gray-600 animate-pulse">Mengambil data dari Google Sheets...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-msg" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+            <strong class="font-bold">Terjadi Kesalahan!</strong>
+            <span class="block sm:inline" id="error-text">Gagal memuat data.</span>
+        </div>
+
+        <!-- Data Table Container (Flex-grow untuk mengisi sisa layar) -->
+        <div id="data-container" class="hidden fade-in bg-white shadow-md rounded-lg overflow-hidden flex flex-col flex-grow" style="height: calc(100vh - 300px); min-height: 400px;">
+            <!-- Header Tools -->
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex-none flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h3 class="text-lg font-semibold text-gray-700">Detail Persediaan (Group by Segment)</h3>
+                <div class="flex gap-2 w-full sm:w-auto">
+                     <input type="text" id="search-input" onkeyup="searchTable()" placeholder="Cari Item, Seg, atau Desc..." class="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                     <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm flex items-center gap-2 transition whitespace-nowrap">
+                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Table Wrapper: Scroll hanya terjadi di sini -->
+            <div class="overflow-auto flex-grow relative bg-white">
+                <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">No</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Item No</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">UOM</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Qty Actual (Rec)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Qty Base</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Zone</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer Count -->
+            <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 flex-none" id="record-count">
+                Menampilkan 0 baris
+            </div>
+        </div>
+    </main>
+
+    <!-- Page Footer -->
+    <footer class="bg-white border-t py-4 flex-none">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>&copy; 2024 Dashboard Inventory. Data realtime dari Google Sheets.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- KONFIGURASI URL SPREADSHEET (Format CSV Export) ---
+        const SHEET_MAIN = 'https://docs.google.com/spreadsheets/d/1a5GLqM7J2iLtjWErDl1PB47AH0uan_4aA3DZ29C0SEw/export?format=csv&gid=0';
+        const SHEET_DESC = 'https://docs.google.com/spreadsheets/d/11-kYb81CtGvf_1ukf_mj6W5Cn_tktqe6blGM4Rc2MZU/export?format=csv&gid=0';
+        const SHEET_QTY  = 'https://docs.google.com/spreadsheets/d/1OOhR4CiIgjLNbVdIQsc6bLxz0nCwhr9lDdmL7zm6wIc/export?format=csv&gid=1628010390';
+
+        // Timer Refresh (60 detik)
+        const REFRESH_INTERVAL = 60000; 
+
+        // Global Variable untuk menyimpan data saat ini (untuk keperluan export)
+        let currentData = [];
+
+        // Fungsi Helper untuk Fetch CSV dan Parse
+        function fetchCSV(url) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(url, {
+                    download: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        resolve(results); 
+                    },
+                    error: function(err) {
+                        reject(err);
+                    }
+                });
+            });
+        }
+
+        // Fungsi normalisasi string
+        const cleanStr = (str) => str ? str.toString().trim().toUpperCase() : "";
+        const cleanNum = (val) => {
+            if (!val) return 0;
+            let num = parseFloat(val.toString().replace(/,/g, ''));
+            return isNaN(num) ? 0 : num;
+        };
+
+        async function loadData() {
+            // UI States
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('data-container').classList.add('hidden');
+            document.getElementById('error-msg').classList.add('hidden');
+            
+            try {
+                const [resMain, resDesc, resQty] = await Promise.all([
+                    fetchCSV(SHEET_MAIN),
+                    fetchCSV(SHEET_DESC),
+                    fetchCSV(SHEET_QTY)
+                ]);
+
+                const dataMain = resMain.data;
+                const dataDesc = resDesc.data;
+                const dataQty = resQty.data;
+
+                console.log("Raw Data Loaded", { main: dataMain.length, desc: dataDesc.length, qty: dataQty.length });
+
+                // --- 1. PROSES MASTER ITEM ---
+                const descHeaders = resDesc.meta.fields;
+                let segmentHeaderName = null;
+                if (descHeaders && descHeaders.length > 6) {
+                    segmentHeaderName = descHeaders[6]; // Kolom G (Index 6)
+                }
+
+                const masterMap = new Map();
+                dataDesc.forEach(row => {
+                    let keys = Object.keys(row);
+                    let itemKey = keys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
+                    let descKey = keys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
+                    
+                    if (itemKey && row[itemKey]) {
+                        let segmentVal = "-";
+                        if (segmentHeaderName && row[segmentHeaderName]) {
+                            segmentVal = row[segmentHeaderName];
+                        }
+                        if (!segmentVal || segmentVal.trim() === "") segmentVal = "UNCATEGORIZED";
+
+                        masterMap.set(cleanStr(row[itemKey]), {
+                            desc: descKey ? row[descKey] : "Deskripsi tidak ditemukan",
+                            segment: segmentVal
+                        });
+                    }
+                });
+
+                // --- 2. PROSES DATA QTY ACTUAL ---
+                const qtyMap = new Map();
+                dataQty.forEach(row => {
+                    let keys = Object.keys(row);
+                    let itemKey = keys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
+                    let qtyKey = keys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
+
+                    if (itemKey && qtyKey && row[itemKey]) {
+                        const itemNo = cleanStr(row[itemKey]);
+                        const val = cleanNum(row[qtyKey]);
+                        
+                        if (qtyMap.has(itemNo)) {
+                            qtyMap.set(itemNo, qtyMap.get(itemNo) + val);
+                        } else {
+                            qtyMap.set(itemNo, val);
+                        }
+                    }
+                });
+
+                // --- 3. FILTER, MAP, & BERSIHKAN DATA UTAMA ---
+                const finalData = dataMain.filter(row => {
+                    const locKey = Object.keys(row).find(k => k.toLowerCase().includes('location') || k.toLowerCase().includes('loc'));
+                    const zoneKey = Object.keys(row).find(k => k.toLowerCase().includes('zone'));
+                    
+                    const locVal = locKey ? cleanStr(row[locKey]) : "";
+                    const zoneVal = zoneKey ? cleanStr(row[zoneKey]) : "";
+
+                    const isNarogong = locVal === "NAROGONG";
+                    const isZoneValid = zoneVal === "FG E" || zoneVal === "GUDANG FG";
+
+                    return isNarogong && isZoneValid;
+                }).map(row => {
+                    const itemKey = Object.keys(row).find(k => k.toLowerCase().includes('item'));
+                    const uomKey = Object.keys(row).find(k => k.toLowerCase().includes('unit') || k.toLowerCase().includes('uom'));
+                    const qtyBaseKey = Object.keys(row).find(k => k.toLowerCase().includes('base') || k.toLowerCase().includes('quantity_base'));
+                    const zoneKey = Object.keys(row).find(k => k.toLowerCase().includes('zone'));
+
+                    const itemNo = itemKey ? row[itemKey] : "-";
+                    const cleanItemNo = cleanStr(itemNo);
+                    
+                    const masterDetails = masterMap.get(cleanItemNo) || { desc: "Deskripsi tidak ditemukan", segment: "UNCATEGORIZED" };
+                    
+                    const qtyActual = qtyMap.get(cleanItemNo) || 0;
+                    const qtyBase = qtyBaseKey ? cleanNum(row[qtyBaseKey]) : 0;
+
+                    return {
+                        segment: masterDetails.segment,
+                        item_no: itemNo,
+                        desc: masterDetails.desc,
+                        uom: uomKey ? row[uomKey] : "",
+                        qty_actual: qtyActual,
+                        qty_base: qtyBase,
+                        zone: zoneKey ? row[zoneKey] : ""
+                    };
+                }).filter(item => {
+                    return (item.qty_actual !== 0 || item.qty_base !== 0);
+                });
+
+                // Sort data by Segment
+                finalData.sort((a, b) => {
+                    if (a.segment < b.segment) return -1;
+                    if (a.segment > b.segment) return 1;
+                    return 0;
+                });
+
+                currentData = finalData;
+
+                renderTable(finalData);
+                updateStats(finalData);
+
+                const now = new Date();
+                document.getElementById('last-update').innerText = `Update: ${now.toLocaleTimeString()}`;
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('data-container').classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error-msg').classList.remove('hidden');
+                document.getElementById('error-text').innerText = "Gagal mengambil data. Pastikan link Google Sheet benar dan akses publik.";
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Tidak ada data yang cocok.</td></tr>';
+                return;
+            }
+
+            let lastSegment = null;
+            let displayIndex = 0;
+
+            data.forEach((row, index) => {
+                if (row.segment !== lastSegment) {
+                    const trHeader = document.createElement('tr');
+                    trHeader.className = "group-header bg-gray-100";
+                    trHeader.dataset.segment = row.segment; 
+                    trHeader.innerHTML = `
+                        <td colspan="7" class="px-6 py-2 border-b border-blue-200 bg-blue-50 text-blue-900 font-bold">
+                            <i class="fa-solid fa-layer-group mr-2"></i> ${row.segment}
+                        </td>
+                    `;
+                    tbody.appendChild(trHeader);
+                    lastSegment = row.segment;
+                }
+
+                displayIndex++;
+                const tr = document.createElement('tr');
+                tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 data-row' : 'bg-gray-50 hover:bg-gray-100 data-row';
+                tr.dataset.segmentGroup = row.segment; 
+
+                const qtyDiffClass = (row.qty_base !== row.qty_actual) ? 'text-amber-600 font-semibold' : 'text-gray-900';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${displayIndex}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${row.item_no}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${row.desc}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${row.uom}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${qtyDiffClass}">${row.qty_actual.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${row.qty_base.toLocaleString('id-ID')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.zone}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('record-count').innerText = `Menampilkan ${data.length} baris data (Filter Qty != 0)`;
+        }
+
+        function updateStats(data) {
+            document.getElementById('total-items').innerText = data.length;
+            const totalBase = data.reduce((acc, curr) => acc + curr.qty_base, 0);
+            document.getElementById('total-qty-base').innerText = totalBase.toLocaleString('id-ID');
+        }
+
+        function searchTable() {
+            const input = document.getElementById('search-input');
+            const filter = input.value.toUpperCase();
+            const tbody = document.getElementById('table-body');
+            
+            const dataRows = tbody.querySelectorAll('tr.data-row');
+            const headerRows = tbody.querySelectorAll('tr.group-header');
+            
+            let visibleSegments = new Set();
+
+            dataRows.forEach(row => {
+                const tdItem = row.children[1];
+                const tdDesc = row.children[2];
+                const groupName = row.dataset.segmentGroup; 
+                
+                let textContent = (groupName || "") + (tdItem ? tdItem.textContent : "") + (tdDesc ? tdDesc.textContent : "");
+
+                if (textContent.toUpperCase().indexOf(filter) > -1) {
+                    row.style.display = "";
+                    visibleSegments.add(groupName);
+                } else {
+                    row.style.display = "none";
+                }
+            });
+
+            headerRows.forEach(header => {
+                if (visibleSegments.has(header.dataset.segment)) {
+                    header.style.display = "";
+                } else {
+                    header.style.display = "none";
+                }
+            });
+        }
+
+        function exportExcel() {
+            if (!currentData || currentData.length === 0) {
+                alert("Tidak ada data untuk diexport!");
+                return;
+            }
+
+            const exportData = currentData.map((row, index) => ({
+                "No": index + 1,
+                "Segment": row.segment,
+                "Item No": row.item_no,
+                "Description": row.desc,
+                "UOM": row.uom,
+                "Qty Actual": row.qty_actual,
+                "Qty Base": row.qty_base,
+                "Zone": row.zone
+            }));
+
+            const csv = Papa.unparse(exportData);
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            const d = new Date();
+            const dateStr = d.toISOString().slice(0,10);
+            const timeStr = d.toTimeString().slice(0,8).replace(/:/g,"");
+
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Inventory_Narogong_${dateStr}_${timeStr}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            setInterval(loadData, REFRESH_INTERVAL);
+        });
+    </script>
+</body>
+</html>
