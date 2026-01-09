@@ -38,13 +38,12 @@
         /* 1. Header Kolom Utama - STICKY DI BAWAH NAVBAR */
         thead th {
             position: sticky;
-            top: 4rem; 
+            top: 0; 
             z-index: 40; 
-            /* Menggunakan warna solid yang kuat untuk menutupi konten di bawahnya saat scroll */
-            background-color: #f1f5f9; /* bg-slate-100 yang lebih pekat */
+            background-color: #f1f5f9; /* bg-slate-100 */
             border-bottom: 2px solid #cbd5e1;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Shadow lebih tegas */
-            background-clip: padding-box; /* Mencegah border transparan */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background-clip: padding-box;
         }
 
         /* 3. Footer Total - STICKY DI BAWAH LAYAR */
@@ -56,6 +55,12 @@
             border-top: 2px solid #94a3b8;
             box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
             font-weight: bold;
+        }
+        
+        /* Table container needs specific height for sticky functionality inside it if inside overflow */
+        .table-container-custom {
+            max-height: 75vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -149,8 +154,8 @@
 
                 <!-- Tools Section (Filter, Search, Export) -->
                 <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                     <!-- Filter Dropdown Segment -->
-                     <div class="relative w-full sm:w-48 group">
+                      <!-- Filter Dropdown Segment -->
+                      <div class="relative w-full sm:w-48 group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-hover:text-blue-500 transition-colors">
                             <i class="fa-solid fa-filter text-xs"></i>
                         </div>
@@ -160,25 +165,25 @@
                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
                             <i class="fa-solid fa-chevron-down text-xs"></i>
                         </div>
-                     </div>
+                      </div>
 
-                     <!-- Search Input -->
-                     <div class="relative w-full sm:w-64 group">
+                      <!-- Search Input -->
+                      <div class="relative w-full sm:w-64 group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <input type="text" id="search-input" onkeyup="searchTable()" placeholder="Cari Item, SKU, atau Nama..." class="pl-10 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full shadow-sm transition-all hover:border-gray-400 text-gray-700">
-                     </div>
-                     
-                     <!-- Export Button -->
-                     <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md justify-center whitespace-nowrap transform active:scale-95">
+                      </div>
+                      
+                      <!-- Export Button -->
+                      <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md justify-center whitespace-nowrap transform active:scale-95">
                         <i class="fa-solid fa-file-excel"></i> <span class="font-medium">Export Excel</span>
                     </button>
                 </div>
             </div>
             
-            <!-- Table Wrapper (Horizontal Scroll Only) -->
-            <div class="overflow-x-auto bg-white">
+            <!-- Table Wrapper (Scrollable) -->
+            <div class="table-container-custom bg-white">
                 <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
                     <thead class="bg-slate-100">
                         <tr>
@@ -340,7 +345,7 @@
 
                 const aggregatedDataMap = new Map();
 
-                // Loop data utama
+                // Loop data utama (System Base)
                 dataMain.forEach(row => {
                     const locVal = mainLocKey ? cleanStr(row[mainLocKey]) : "";
                     const zoneVal = mainZoneKey ? cleanStr(row[mainZoneKey]) : "";
@@ -364,6 +369,29 @@
                         const entry = aggregatedDataMap.get(cleanItemNo);
                         entry.qty_base_total += qtyBase;
                         if (uom && uom !== "") entry.uom = uom;
+                    }
+                });
+
+                // --- PERBAIKAN: CEK ITEM YANG ADA DI QTY TAPI TIDAK ADA DI MAIN (ATAU DI LUAR ZONE) ---
+                // Loop melalui data Qty Actual
+                qtyMap.forEach((qtyVal, itemKey) => {
+                    // Jika item ini belum ada di aggregatedDataMap (artinya tidak ada di Main sheet filteran NAROGONG)
+                    if (!aggregatedDataMap.has(itemKey)) {
+                        
+                        // Cek apakah deskripsi ada di Master Data untuk memastikan ini item valid
+                        const masterDetails = masterMap.get(itemKey);
+                        
+                        // Opsional: Jika Anda ingin hanya menampilkan yang ada di master
+                        // if (masterDetails) { ... }
+                        
+                        // Tambahkan ke map
+                        aggregatedDataMap.set(itemKey, {
+                            item_no: itemKey, // Gunakan key sebagai nomor item
+                            cleanItemNo: itemKey,
+                            uom: "-", // Default UOM karena tidak ada di Main
+                            qty_base_total: 0, // Karena tidak ada di Main pada lokasi yang difilter
+                            zone: "EXTRA (PHY)" // Penanda bahwa ini dari fisik
+                        });
                     }
                 });
 
@@ -473,16 +501,21 @@
                     varianceIcon = '<i class="fa-solid fa-arrow-up mr-1 text-xs"></i>';
                 }
 
-                // Tambahkan tooltip jika ada selisih
                 if (row.variance !== 0) {
                     varianceTooltip = 'Perbedaan Qty disebabkan update di stock card tidak real time. Saat akhir shift baru akan diupdate dan dipastikan stock balance antara actual dan sistem.';
                     cursorStyle = 'cursor-help border-b border-dotted border-gray-400';
                 }
 
+                // Styling untuk Item yang tidak ada di Base tapi ada di Actual (Kasus 121-701-0001)
+                let itemClass = "text-blue-600";
+                if (row.qty_base === 0 && row.qty_actual > 0) {
+                    itemClass = "text-purple-600 font-bold"; // Warna beda untuk menandakan extra item
+                }
+
                 tr.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono border-r border-gray-100">${displayIndex}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-800 font-bold uppercase tracking-wide border-r border-gray-100"><span class="bg-blue-100 px-2 py-1 rounded text-xs">${row.segment}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 border-r border-gray-100">${row.item_no}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${itemClass} border-r border-gray-100">${row.item_no}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate md:max-w-none md:whitespace-normal border-r border-gray-100" title="${row.desc}">${row.desc}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${row.uom}</span></td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_actual.toLocaleString('id-ID')}</td>
@@ -495,7 +528,6 @@
             });
 
             // --- RENDER FOOTER TOTAL ---
-            // Styling Total Variance
             let totalVarClass = 'text-gray-900';
             if (totalVariance < 0) totalVarClass = 'text-red-700';
             else if (totalVariance > 0) totalVarClass = 'text-green-700';
@@ -509,7 +541,6 @@
                 </tr>
             `;
 
-            // Terapkan filter yang mungkin ada
             searchTable();
         }
 
@@ -541,10 +572,8 @@
                 const tdDesc = row.children[3];
                 const groupName = row.dataset.segmentGroup; 
                 
-                // Ambil nilai Qty dari kolom index 5, 6
                 const qtyActualVal = parseFloat(row.children[5].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
                 const qtyBaseVal = parseFloat(row.children[6].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
-                // Hitung ulang variance biar akurat
                 const varianceVal = qtyActualVal - qtyBaseVal;
 
                 let textContent = (groupName || "") + (tdItem ? tdItem.textContent : "") + (tdDesc ? tdDesc.textContent : "");
@@ -565,7 +594,6 @@
 
             document.getElementById('record-count').innerText = `Menampilkan ${visibleCount} baris data`;
 
-            // Style Total Filtered Variance
             let totalVarClass = 'text-gray-900';
             if (currentFilteredTotalVariance < 0) totalVarClass = 'text-red-700';
             else if (currentFilteredTotalVariance > 0) totalVarClass = 'text-green-700';
