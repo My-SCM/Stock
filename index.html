@@ -589,6 +589,7 @@
         // --- WHATSAPP AUTOMATION LOGIC ---
         async function loadWhatsAppConfig() {
             try {
+                // Login anonymously first
                 if (!auth.currentUser) await auth.signInAnonymously();
                 
                 const docRef = db.collection('settings').doc('whatsapp_config');
@@ -759,8 +760,12 @@
                         // Format: ItemNo Description: Qty
                         // Truncate desc if too long
                         const shortDesc = item.desc.length > 25 ? item.desc.substring(0, 25) + '...' : item.desc;
+                        
                         if (totalSystem > 0) { // Only list items with system stock
-                            msg += `- ${item.item_no} ${shortDesc}: ${totalSystem.toLocaleString('id-ID')} ZAK\n`;
+                            // Determine unit label using stricter check
+                            const unitLabel = seg.toUpperCase().includes("GENERAL") ? "PAC" : "ZAK";
+                            // UPDATE: Qty only Bold (*)
+                            msg += `- ${item.item_no} ${shortDesc}: *${totalSystem.toLocaleString('id-ID')}* ${unitLabel}\n`;
                         }
                     });
                     msg += `\n`;
