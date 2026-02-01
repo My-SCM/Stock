@@ -8,9 +8,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse untuk membaca CSV Google Sheets -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- SheetJS dengan Style (xlsx-js-style) untuk Export Excel Rapi -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <!-- Html2Canvas untuk Screenshot -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- Font Awesome untuk Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 untuk Popup Login Cantik -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <!-- FIREBASE SDK (Compat Version for ease of use in HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
     <style>
         /* Animasi Loading */
         .spinner {
@@ -33,34 +44,48 @@
             to { opacity: 1; }
         }
 
-        /* --- STICKY HEADERS & FOOTERS CONFIGURATION --- */
-        
-        /* 1. Header Kolom Utama - STICKY DI BAWAH NAVBAR */
-        thead th {
+        /* Animasi Marquee (Teks Berjalan) */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 15s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+
+        /* --- STICKY HEADERS CONFIGURATION --- */
+        .table-container-custom {
+            max-height: 60vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        thead {
             position: sticky;
-            top: 0; 
-            z-index: 40; 
-            background-color: #f1f5f9; /* bg-slate-100 */
-            border-bottom: 2px solid #cbd5e1;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            top: 0;
+            z-index: 50;
+        }
+
+        thead th {
+            background-color: #f1f5f9;
+            border-bottom: 1px solid #cbd5e1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             background-clip: padding-box;
         }
 
-        /* 3. Footer Total - STICKY DI BAWAH LAYAR */
         tfoot td {
             position: sticky;
             bottom: 0;
             z-index: 40;
-            background-color: #f1f5f9; /* bg-slate-100 */
+            background-color: #f1f5f9;
             border-top: 2px solid #94a3b8;
             box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
             font-weight: bold;
-        }
-        
-        /* Table container needs specific height for sticky functionality inside it if inside overflow */
-        .table-container-custom {
-            max-height: 75vh;
-            overflow-y: auto;
         }
     </style>
 </head>
@@ -74,10 +99,18 @@
                     <i class="fa-solid fa-boxes-stacked text-2xl mr-3"></i>
                     <h1 class="font-bold text-xl tracking-wide">Narogong Inventory Dashboard</h1>
                 </div>
-                <div class="flex items-center text-sm">
-                    <span id="last-update" class="mr-4 text-gray-300 hidden sm:block">Update: -</span>
+                <div class="flex items-center text-sm gap-2">
+                    <span id="last-update" class="mr-2 text-gray-300 hidden sm:block">Update: -</span>
                     <button onclick="loadData()" class="bg-blue-700 hover:bg-blue-600 px-3 py-1 rounded transition flex items-center gap-2 shadow-sm border border-blue-600">
                         <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
+                    </button>
+                    <!-- Login Button -->
+                    <button id="btn-login" onclick="showLoginModal()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded transition flex items-center gap-2 shadow-sm border border-emerald-500 ml-2">
+                        <i class="fa-solid fa-user-lock"></i> <span class="hidden sm:inline">Admin</span>
+                    </button>
+                    <!-- Logout Button (Hidden by default) -->
+                    <button id="btn-logout" onclick="doLogout()" class="hidden bg-red-600 hover:bg-red-500 px-3 py-1 rounded transition flex items-center gap-2 shadow-sm border border-red-500 ml-2">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Logout</span>
                     </button>
                 </div>
             </div>
@@ -88,7 +121,8 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- 1. Total Item -->
             <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                 <div class="flex items-center justify-between">
                     <div>
@@ -100,17 +134,65 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium uppercase">Total Qty Base</p>
-                        <h2 class="text-3xl font-bold text-gray-800" id="total-qty-base">0</h2>
+
+            <!-- 2. Total Qty -->
+            <div class="bg-white rounded-lg shadow border-l-4 border-green-500 flex flex-col justify-between overflow-hidden relative">
+                <div class="p-5">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="text-gray-500 text-sm font-medium uppercase">Total Qty (ZAK)</p>
+                        <div class="bg-green-100 p-2 rounded-full text-green-600">
+                            <i class="fa-solid fa-cube text-lg"></i>
+                        </div>
                     </div>
-                    <div class="bg-green-100 p-3 rounded-full text-green-600">
-                        <i class="fa-solid fa-cube text-xl"></i>
+                    <div class="flex items-start gap-4 mb-2">
+                        <div class="flex flex-col">
+                            <div>
+                                <p class="text-xs text-gray-400">System</p>
+                                <h2 class="text-xl font-bold text-gray-800" id="total-qty-base">0</h2>
+                            </div>
+                            <div class="mt-1 pt-1 border-t border-gray-100">
+                                <p class="text-[10px] text-orange-500 font-semibold uppercase tracking-tighter">Pending Movement</p>
+                                <h2 class="text-sm font-bold text-orange-600" id="total-qty-output">0</h2>
+                            </div>
+                        </div>
+                        <div class="h-12 w-px bg-gray-300 self-center"></div>
+                        <div class="self-center">
+                            <p class="text-xs text-gray-400">Actual</p>
+                            <h2 class="text-2xl font-bold text-blue-600" id="total-qty-actual">0</h2>
+                        </div>
                     </div>
                 </div>
+                <div class="w-full overflow-hidden bg-yellow-50 border-t border-yellow-100 h-8 flex items-center px-4">
+                    <p class="animate-marquee text-xs text-red-600 italic font-medium whitespace-nowrap">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Selisih Actual vs System karena belum update di stock card oleh OP Gudang. Update realtime setiap Jam 9 Pagi (Awal Shift) dan Akhir Shift.
+                    </p>
+                </div>
             </div>
+
+            <!-- 3. Kapasitas Gudang -->
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Utilisasi Gudang</p>
+                        <div class="flex items-baseline gap-2">
+                            <h2 class="text-2xl font-bold text-gray-800" id="utilization-pct">0%</h2>
+                            <span class="text-xs text-gray-400 font-medium">Terpakai</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-full text-orange-600">
+                        <i class="fa-solid fa-chart-pie text-xl"></i>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                  <div id="utilization-bar" class="bg-orange-500 h-2.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-xs font-semibold">
+                    <span class="text-orange-600">Max: 56.549</span>
+                    <span class="text-green-600">Sisa: <span id="available-pct">100%</span></span>
+                </div>
+            </div>
+
+            <!-- 4. Lokasi Filter -->
             <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
                 <div class="flex items-center justify-between">
                     <div>
@@ -125,6 +207,19 @@
             </div>
         </div>
 
+        <!-- Menu Tabs -->
+        <div class="flex space-x-2 mb-4 border-b border-gray-300 pb-1 overflow-x-auto">
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-blue-600 text-blue-600 bg-blue-50 focus:outline-none flex items-center gap-2">
+                <i class="fa-solid fa-table-list"></i> Detail Persediaan
+            </button>
+            <button onclick="switchTab('space')" id="tab-space" class="px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 focus:outline-none flex items-center gap-2">
+                <i class="fa-solid fa-warehouse"></i> Actual Vs Space
+            </button>
+            <button onclick="switchTab('admin')" id="tab-admin" class="hidden px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-red-600 hover:text-red-800 hover:bg-red-50 focus:outline-none flex items-center gap-2">
+                <i class="fa-solid fa-database"></i> Master Data (Admin)
+            </button>
+        </div>
+
         <!-- Loading State -->
         <div id="loading" class="flex flex-col items-center justify-center py-12">
             <div class="spinner mb-4"></div>
@@ -137,111 +232,305 @@
             <span class="block sm:inline" id="error-text">Gagal memuat data.</span>
         </div>
 
-        <!-- Data Table Container -->
-        <div id="data-container" class="hidden fade-in bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
-            <!-- Header Tools -->
-            <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 flex flex-col lg:flex-row justify-between items-center gap-4">
-                <!-- Title Section -->
-                <div class="flex items-center gap-3 w-full lg:w-auto">
-                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
-                        <i class="fa-solid fa-table-list"></i>
+        <!-- Tools Section -->
+        <div id="tools-container" class="hidden px-6 py-5 bg-white border border-b-0 border-gray-200 rounded-t-lg flex flex-col lg:flex-row justify-between items-center gap-4 shadow-sm">
+             <div class="flex items-center gap-3 w-full lg:w-auto">
+                <h3 class="text-lg font-bold text-gray-800" id="page-title">Detail Persediaan</h3>
+             </div>
+             <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                  <div class="relative w-full sm:w-48 group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-hover:text-blue-500 transition-colors">
+                        <i class="fa-solid fa-filter text-xs"></i>
                     </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-800">Detail Persediaan</h3>
-                        <p class="text-xs text-gray-500 hidden sm:block">Data stok realtime terupdate</p>
+                    <select id="segment-filter" onchange="applyFilters()" class="pl-9 pr-8 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full bg-white shadow-sm cursor-pointer appearance-none text-gray-700 font-medium">
+                        <option value="">Semua Segment</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                  </div>
+                  <div class="relative w-full sm:w-64 group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Cari Item, SKU, atau Nama..." class="pl-10 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full shadow-sm text-gray-700">
+                  </div>
+                  <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md justify-center whitespace-nowrap active:scale-95">
+                    <i class="fa-solid fa-file-excel"></i> <span class="font-medium">Export Excel</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW 1: Detail Persediaan (Split Tables) -->
+        <div id="view-inventory" class="hidden fade-in space-y-8 pb-8">
+            <!-- Table 1: Main -->
+            <div class="bg-white shadow-md rounded-b-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-gradient-to-r from-blue-900 to-blue-800 border-b border-blue-700 text-white flex items-center justify-between">
+                    <h4 class="font-bold tracking-wide flex items-center"><i class="fa-solid fa-boxes-stacked mr-2"></i>DETAIL PERSEDIAAN: RETAIL & PROJECT</h4>
+                </div>
+                <div class="table-container-custom bg-white">
+                    <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">No</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Segment</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Item No</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Description</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">UOM</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200 text-blue-700 bg-blue-50">Output Produksi</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Actual (Rec)</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Base</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Variance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-inventory-main" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tfoot id="tfoot-inventory-main" class="bg-slate-100 text-sm border-t-2 border-gray-300"></tfoot>
+                    </table>
+                </div>
+            </div>
+            <!-- Table 2: General -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-slate-600 text-white flex items-center justify-between">
+                    <h4 class="font-bold tracking-wide flex items-center"><i class="fa-solid fa-box-open mr-2"></i>DETAIL PERSEDIAAN: GENERAL</h4>
+                    <span class="text-xs bg-slate-600 px-2 py-1 rounded border border-slate-500 shadow-sm">General Only</span>
+                </div>
+                <div class="table-container-custom bg-white">
+                    <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">No</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Segment</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Item No</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Description</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">UOM</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200 text-blue-700 bg-blue-50">Output Produksi</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Actual (Rec)</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Base</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Variance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-inventory-general" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tfoot id="tfoot-inventory-general" class="bg-slate-100 text-sm border-t-2 border-gray-300"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: Actual Vs Space (Split Tables) -->
+        <div id="view-space" class="hidden fade-in space-y-8 pb-8">
+            <!-- Table 1: Stacking -->
+            <div id="capture-stacking" class="bg-white shadow-md rounded-b-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-gradient-to-r from-blue-900 to-blue-800 border-b border-blue-700 text-white flex items-center justify-between">
+                    <h4 class="font-bold tracking-wide flex items-center"><i class="fa-solid fa-layer-group mr-2"></i>STORAGE : PALLET POSITION / STACKING</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs bg-blue-700 px-2 py-1 rounded border border-blue-500 shadow-sm">Retail, Project, dll</span>
+                        <button onclick="takeScreenshot('capture-stacking', 'Storage_Stacking')" class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs transition border border-white/30 flex items-center gap-1" title="Ambil Screenshot">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
                     </div>
                 </div>
+                <div class="table-container-custom bg-white">
+                    <table class="min-w-full divide-y divide-gray-200 relative border-collapse text-sm">
+                        <thead class="bg-slate-100">
+                            <!-- Headers -->
+                            <tr>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Item Code</th>
+                                <th rowspan="2" class="px-4 py-2 text-left text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 w-64">Desc</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Segment</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Weight</th>
+                                <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-blue-800 uppercase border-r border-gray-200">Balance Stock WH FG (Plant-NAR)</th>
+                                <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-slate-600 uppercase border-r border-gray-200">Max Capacity WH FG Plant</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Space Area<br>(Plant NAR)</th>
+                            </tr>
+                            <tr>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">ZAK</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">Ton</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">PALLET</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">ZAK</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">Ton</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">PALLET</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-space-stacking" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tfoot id="tfoot-space-stacking" class="bg-slate-100 text-sm border-t-2 border-gray-300"></tfoot>
+                    </table>
+                </div>
+            </div>
+            <!-- Table 2: Rack -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-slate-600 text-white flex items-center justify-between">
+                    <h4 class="font-bold tracking-wide flex items-center"><i class="fa-solid fa-dolly mr-2"></i>STORAGE : RACK</h4>
+                    <span class="text-xs bg-slate-600 px-2 py-1 rounded border border-slate-500 shadow-sm">General Segment</span>
+                </div>
+                <div class="table-container-custom bg-white">
+                    <table class="min-w-full divide-y divide-gray-200 relative border-collapse text-sm">
+                        <thead class="bg-slate-100">
+                            <tr>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Item Code</th>
+                                <th rowspan="2" class="px-4 py-2 text-left text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 w-64">Desc</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Segment</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Weight</th>
+                                <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-blue-800 uppercase border-r border-gray-200">Balance Stock WH FG (Plant-NAR)</th>
+                                <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-slate-600 uppercase border-r border-gray-200">Max Capacity WH FG Plant</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Space Area<br>(Plant NAR)</th>
+                            </tr>
+                            <tr>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">ZAK</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">Ton</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">PALLET</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">ZAK</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">Ton</th>
+                                <th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">PALLET</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-space-rack" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tfoot id="tfoot-space-rack" class="bg-slate-100 text-sm border-t-2 border-gray-300"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-                <!-- Tools Section (Filter, Search, Export) -->
-                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                      <!-- Filter Dropdown Segment -->
-                      <div class="relative w-full sm:w-48 group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-hover:text-blue-500 transition-colors">
-                            <i class="fa-solid fa-filter text-xs"></i>
+        <!-- VIEW 3: Admin Master Data (Updated with WhatsApp Config) -->
+        <div id="view-admin" class="hidden fade-in space-y-8 pb-8">
+            
+            <!-- WhatsApp Config Card -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+                <div class="px-6 py-4 bg-green-600 border-b border-green-700 text-white">
+                    <h4 class="font-bold tracking-wide flex items-center"><i class="fa-brands fa-whatsapp mr-2"></i>Konfigurasi WhatsApp Otomatis</h4>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-1">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Fonnte Token</label>
+                            <input type="text" id="wa-token" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Masukkan Token Fonnte">
                         </div>
-                        <select id="segment-filter" onchange="searchTable()" class="pl-9 pr-8 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full bg-white shadow-sm transition-all hover:border-gray-400 cursor-pointer appearance-none text-gray-700 font-medium">
-                            <option value="">Semua Segment</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        <div class="col-span-1">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Target (Group ID / Nomor)</label>
+                            <input type="text" id="wa-target" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Contoh: 12036... atau 0812...">
                         </div>
-                      </div>
+                        
+                        <!-- NEW: Flexible Schedule -->
+                        <div class="col-span-2">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Jadwal Pengiriman</label>
+                            
+                            <!-- Days Selection -->
+                            <div class="mb-4 bg-gray-50 p-3 rounded border">
+                                <span class="text-xs text-gray-600 font-semibold mb-2 block uppercase">Pilih Hari:</span>
+                                <div class="flex flex-wrap gap-4" id="wa-days-container">
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="1" class="form-checkbox text-blue-600 h-4 w-4 rounded border-gray-300 focus:ring-blue-500"> <span class="ml-2 text-sm text-gray-700">Senin</span></label>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="2" class="form-checkbox text-blue-600 h-4 w-4 rounded border-gray-300 focus:ring-blue-500"> <span class="ml-2 text-sm text-gray-700">Selasa</span></label>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="3" class="form-checkbox text-blue-600 h-4 w-4 rounded border-gray-300 focus:ring-blue-500"> <span class="ml-2 text-sm text-gray-700">Rabu</span></label>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="4" class="form-checkbox text-blue-600 h-4 w-4 rounded border-gray-300 focus:ring-blue-500"> <span class="ml-2 text-sm text-gray-700">Kamis</span></label>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="5" class="form-checkbox text-blue-600 h-4 w-4 rounded border-gray-300 focus:ring-blue-500"> <span class="ml-2 text-sm text-gray-700">Jumat</span></label>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="6" class="form-checkbox text-blue-600 h-4 w-4 rounded border-gray-300 focus:ring-blue-500"> <span class="ml-2 text-sm text-gray-700">Sabtu</span></label>
+                                    <label class="inline-flex items-center cursor-pointer"><input type="checkbox" value="0" class="form-checkbox text-red-600 h-4 w-4 rounded border-gray-300 focus:ring-red-500"> <span class="ml-2 text-sm text-gray-700 font-semibold text-red-600">Minggu</span></label>
+                                </div>
+                            </div>
 
-                      <!-- Search Input -->
-                      <div class="relative w-full sm:w-64 group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
-                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <!-- Times Selection -->
+                            <div class="bg-gray-50 p-3 rounded border">
+                                <span class="text-xs text-gray-600 font-semibold mb-2 block uppercase">Waktu Kirim:</span>
+                                <div class="flex gap-2 mb-3">
+                                    <input type="time" id="wa-time-input" class="shadow appearance-none border rounded py-1 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline w-32">
+                                    <button onclick="addTimeSchedule()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded flex items-center shadow-sm">
+                                        <i class="fa-solid fa-plus mr-1"></i> Tambah
+                                    </button>
+                                </div>
+                                <div id="wa-times-list" class="flex flex-wrap gap-2 min-h-[40px] items-center">
+                                    <!-- Dynamic Badges -->
+                                    <span class="text-xs text-gray-400 italic" id="no-times-msg">Belum ada waktu diatur.</span>
+                                </div>
+                            </div>
                         </div>
-                        <input type="text" id="search-input" onkeyup="searchTable()" placeholder="Cari Item, SKU, atau Nama..." class="pl-10 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full shadow-sm transition-all hover:border-gray-400 text-gray-700">
-                      </div>
-                      
-                      <!-- Export Button -->
-                      <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md justify-center whitespace-nowrap transform active:scale-95">
-                        <i class="fa-solid fa-file-excel"></i> <span class="font-medium">Export Excel</span>
+
+                        <div class="flex items-center pt-6 col-span-2">
+                            <input id="wa-active" type="checkbox" class="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 cursor-pointer">
+                            <label for="wa-active" class="ml-2 text-base font-medium text-gray-900 cursor-pointer">Aktifkan Pengiriman Otomatis</label>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex gap-3 pt-4 border-t border-gray-100">
+                        <button onclick="saveWhatsAppConfig()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded shadow hover:shadow-md transition flex items-center">
+                            <i class="fa-solid fa-save mr-2"></i> Simpan Konfigurasi
+                        </button>
+                        <button onclick="testWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow hover:shadow-md transition flex items-center ml-auto">
+                            <i class="fa-solid fa-paper-plane mr-2"></i> Test Kirim Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Master Data -->
+            <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
+                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <h4 class="font-bold text-gray-700">Editor Master Data</h4>
+                    <button onclick="saveAdminData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Spreadsheet
                     </button>
+                 </div>
+                <div class="table-container-custom bg-white">
+                    <table class="min-w-full divide-y divide-gray-200 relative border-collapse text-sm">
+                        <thead class="bg-slate-100">
+                             <tr id="thead-admin-row"></tr>
+                        </thead>
+                        <tbody id="tbody-admin" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
                 </div>
             </div>
-            
-            <!-- Table Wrapper (Scrollable) -->
-            <div class="table-container-custom bg-white">
-                <table class="min-w-full divide-y divide-gray-200 relative border-collapse">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">No</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Segment</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Item No</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Description</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">UOM</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Actual (Rec)</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Qty Base</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200">Variance</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Rows will be populated by JS -->
-                    </tbody>
-                    <!-- Footer untuk Total -->
-                    <tfoot id="table-footer" class="bg-slate-100 text-sm border-t-2 border-gray-300">
-                        <!-- Total row inserted by JS -->
-                    </tfoot>
-                </table>
-            </div>
-            
-            <!-- Footer Count -->
-            <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-500" id="record-count">
-                Menampilkan 0 baris
-            </div>
+        </div>
+
+        <!-- Footer Count -->
+        <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-500 rounded-b-lg mt-0" id="record-count">
+            Menampilkan 0 baris
         </div>
     </main>
 
     <!-- Page Footer -->
     <footer class="bg-white border-t py-4 hidden sm:block">
         <div class="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
-            <p>&copy; 2025 Dashboard Inventory by GuoKing_. Data realtime dari Google Sheets.</p>
+            <p>&copy; 2025 Dashboard Inventory Direktorat Operation Dept SCM</p>
         </div>
     </footer>
 
     <script>
-        // --- KONFIGURASI URL SPREADSHEET ---
         const SHEET_MAIN = 'https://docs.google.com/spreadsheets/d/1a5GLqM7J2iLtjWErDl1PB47AH0uan_4aA3DZ29C0SEw/export?format=csv&gid=0';
         const SHEET_DESC = 'https://docs.google.com/spreadsheets/d/11-kYb81CtGvf_1ukf_mj6W5Cn_tktqe6blGM4Rc2MZU/export?format=csv&gid=0';
         const SHEET_QTY  = 'https://docs.google.com/spreadsheets/d/1OOhR4CiIgjLNbVdIQsc6bLxz0nCwhr9lDdmL7zm6wIc/export?format=csv&gid=1628010390';
+        const SHEET_MASTER_DATA = 'https://docs.google.com/spreadsheets/d/13VzI80K9j4gNahVLrNGfIjTS45A0TS9PqYNcwldlnXQ/export?format=csv&gid=1604406281';
+        const GOOGLE_SCRIPT_URL = ""; 
+
+        // Firebase Config
+        const firebaseConfig = {
+          apiKey: "AIzaSyCYpQaaDgT8GPcvTFnEET-srZEni8TUyyg",
+          authDomain: "inventory-ec3d2.firebaseapp.com",
+          projectId: "inventory-ec3d2",
+          storageBucket: "inventory-ec3d2.firebasestorage.app",
+          messagingSenderId: "616667867156",
+          appId: "1:616667867156:web:f62fb10fd695cb857cdf01"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const appId = 'narogong-inventory'; // Fixed ID for persistence
 
         const REFRESH_INTERVAL = 60000; 
+        
         let currentData = [];
+        let adminData = [];
+        let activeTab = 'inventory'; 
+        let isAdminLoggedIn = false;
+        let waTimer = null;
+        let scheduledTimes = []; // Store times in memory
+        let lastSentTime = ""; // Prevent duplicate sends
 
         function fetchCSV(url) {
             return new Promise((resolve, reject) => {
-                Papa.parse(url, {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) { resolve(results); },
-                    error: function(err) { reject(err); }
-                });
+                Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: (res) => resolve(res), error: (err) => reject(err) });
             });
         }
-
         const cleanStr = (str) => str ? str.toString().trim().toUpperCase() : "";
         const cleanNum = (val) => {
             if (!val) return 0;
@@ -251,428 +540,644 @@
             return isNaN(num) ? 0 : num;
         };
 
+        // --- SCHEDULING UI FUNCTIONS ---
+        function addTimeSchedule() {
+            const input = document.getElementById('wa-time-input');
+            const time = input.value;
+            if (!time) return;
+            if (!scheduledTimes.includes(time)) {
+                scheduledTimes.push(time);
+                scheduledTimes.sort(); // Keep sorted
+                renderTimeList();
+            }
+            input.value = '';
+        }
+
+        function removeTimeSchedule(time) {
+            scheduledTimes = scheduledTimes.filter(t => t !== time);
+            renderTimeList();
+        }
+
+        function renderTimeList() {
+            const container = document.getElementById('wa-times-list');
+            const noMsg = document.getElementById('no-times-msg');
+            container.innerHTML = '';
+            
+            if (scheduledTimes.length === 0) {
+                container.appendChild(noMsg);
+                noMsg.style.display = 'block';
+                return;
+            }
+            
+            // Re-append noMsg but hidden
+            container.appendChild(noMsg); 
+            noMsg.style.display = 'none';
+
+            scheduledTimes.forEach(time => {
+                const badge = document.createElement('div');
+                badge.className = "bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-1 rounded border border-blue-200 flex items-center";
+                badge.innerHTML = `
+                    <span>${time}</span>
+                    <button onclick="removeTimeSchedule('${time}')" class="ml-2 text-blue-600 hover:text-red-600 focus:outline-none">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(badge);
+            });
+        }
+
+        // --- WHATSAPP AUTOMATION LOGIC ---
+        async function loadWhatsAppConfig() {
+            try {
+                if (!auth.currentUser) await auth.signInAnonymously();
+                
+                const docRef = db.collection('settings').doc('whatsapp_config');
+                const docSnap = await docRef.get();
+                
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    document.getElementById('wa-token').value = data.token || '';
+                    document.getElementById('wa-target').value = data.target || '';
+                    document.getElementById('wa-active').checked = data.active || false;
+                    
+                    // Load Days Checkboxes
+                    const savedDays = data.days || [];
+                    document.querySelectorAll('#wa-days-container input[type="checkbox"]').forEach(cb => {
+                        cb.checked = savedDays.includes(parseInt(cb.value));
+                    });
+
+                    // Load Times
+                    scheduledTimes = data.times || [];
+                    renderTimeList();
+
+                    if (data.active) startAutoSender();
+                }
+            } catch (err) {
+                console.error("Error loading WA config:", err);
+            }
+        }
+
+        async function saveWhatsAppConfig() {
+            const token = document.getElementById('wa-token').value;
+            const target = document.getElementById('wa-target').value;
+            const active = document.getElementById('wa-active').checked;
+            
+            // Gather Days
+            const days = [];
+            document.querySelectorAll('#wa-days-container input[type="checkbox"]:checked').forEach(cb => {
+                days.push(parseInt(cb.value));
+            });
+
+            if (!token || !target) {
+                Swal.fire('Error', 'Token dan Target wajib diisi!', 'error');
+                return;
+            }
+            if (days.length === 0 || scheduledTimes.length === 0) {
+                Swal.fire('Warning', 'Harap pilih minimal satu Hari dan satu Jam.', 'warning');
+                // Allow save but warn
+            }
+
+            try {
+                if (!auth.currentUser) await auth.signInAnonymously();
+                
+                await db.collection('settings').doc('whatsapp_config').set({
+                    token: token,
+                    target: target,
+                    days: days,
+                    times: scheduledTimes,
+                    active: active,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                Swal.fire('Sukses', 'Konfigurasi jadwal berhasil disimpan.', 'success');
+                
+                if (active) startAutoSender();
+                else stopAutoSender();
+                
+            } catch (err) {
+                console.error("Error saving WA config:", err);
+                Swal.fire('Error', 'Gagal menyimpan ke Firebase: ' + err.message, 'error');
+            }
+        }
+
+        function startAutoSender() {
+            stopAutoSender();
+            console.log('WA Auto Sender Started. Checking every 30s.');
+            // Check every 30 seconds to catch the exact minute
+            waTimer = setInterval(() => { checkScheduleAndSend(); }, 30000); 
+        }
+
+        function stopAutoSender() {
+            if (waTimer) { clearInterval(waTimer); waTimer = null; console.log('WA Auto Sender Stopped.'); }
+        }
+
+        function checkScheduleAndSend() {
+            // Get Config from UI (assuming it's loaded and sync with state)
+            // Or rely on the in-memory variables if page hasn't reloaded
+            const active = document.getElementById('wa-active').checked;
+            if (!active) return;
+
+            const now = new Date();
+            const currentDay = now.getDay(); // 0-6
+            // Format time HH:MM
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const currentTime = `${hours}:${minutes}`;
+
+            // Check Day
+            const checkedDays = [];
+            document.querySelectorAll('#wa-days-container input[type="checkbox"]:checked').forEach(cb => {
+                checkedDays.push(parseInt(cb.value));
+            });
+
+            if (checkedDays.includes(currentDay) && scheduledTimes.includes(currentTime)) {
+                // Check if already sent this minute
+                if (lastSentTime !== currentTime) {
+                    console.log(`Triggering Auto Send at ${currentTime}`);
+                    testWhatsApp(true); // Send!
+                    lastSentTime = currentTime;
+                }
+            }
+        }
+
+        async function testWhatsApp(isAuto = false) {
+            const token = document.getElementById('wa-token').value;
+            const target = document.getElementById('wa-target').value;
+            
+            if (!token || !target) {
+                if (!isAuto) Swal.fire('Error', 'Token atau Target belum dikonfigurasi.', 'error');
+                return;
+            }
+
+            if (!isAuto) {
+                Swal.fire({ title: 'Mengirim Laporan...', text: 'Sedang menyusun data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            }
+
+            try {
+                // 1. Calculate Utilization (Retail + Project Actuals vs 56549)
+                const stackingData = currentData.filter(item => {
+                    const seg = item.segment ? item.segment.toUpperCase() : "";
+                    return seg === 'RETAIL' || seg === 'PROJECT';
+                });
+                
+                // Use Actual Quantities for Space Utilization
+                const totalActualStacking = stackingData.reduce((acc, curr) => acc + curr.qty_actual, 0);
+                const utilizationPct = (totalActualStacking / 56549) * 100;
+
+                // 2. Group Data by Segment for Listing (Using System Qty: Base + Output)
+                const grouped = {};
+                currentData.forEach(item => {
+                    // Skip Uncategorized
+                    if (item.segment === "UNCATEGORIZED") return;
+
+                    const seg = item.segment || "OTHER";
+                    if (!grouped[seg]) grouped[seg] = [];
+                    grouped[seg].push(item);
+                });
+
+                // 3. Build Message
+                let msg = `*Laporan Otomatis Inventory Narogong*\n`;
+                msg += `Tanggal: ${new Date().toLocaleString('id-ID')}\n\n`;
+                msg += `*DETAIL PERSEDIAAN*\n\n`;
+
+                // Sort segments: RETAIL, PROJECT, GENERAL, Others
+                const priority = { "RETAIL": 1, "PROJECT": 2, "GENERAL": 3 };
+                const sortedSegments = Object.keys(grouped).sort((a, b) => {
+                     const scoreA = priority[a.toUpperCase()] || 4;
+                     const scoreB = priority[b.toUpperCase()] || 4;
+                     return scoreA - scoreB;
+                });
+
+                sortedSegments.forEach(seg => {
+                    msg += `*${seg}*\n`;
+                    // Sort items in segment
+                    grouped[seg].sort((a, b) => a.item_no.localeCompare(b.item_no));
+                    
+                    grouped[seg].forEach(item => {
+                        // Calculate System Qty (Base + Output)
+                        const totalSystem = item.qty_base + (item.qty_output || 0);
+                        // Format: ItemNo Description: Qty
+                        // Truncate desc if too long
+                        const shortDesc = item.desc.length > 25 ? item.desc.substring(0, 25) + '...' : item.desc;
+                        if (totalSystem > 0) { // Only list items with system stock
+                            msg += `- ${item.item_no} ${shortDesc}: ${totalSystem.toLocaleString('id-ID')} ZAK\n`;
+                        }
+                    });
+                    msg += `\n`;
+                });
+
+                msg += `--------------------------------\n`;
+                msg += `_Stok berdasarkan data ERP (Bin Content FG) dan output produksi._\n`;
+                msg += `_Utilisasi Warehouse ZONE Finish Good (PALLET POSITION / STACKING): ${utilizationPct.toFixed(2)}%_\n`;
+
+                // 4. Send
+                const formData = new FormData();
+                formData.append('target', target);
+                formData.append('message', msg);
+
+                const response = await fetch('https://api.fonnte.com/send', {
+                    method: 'POST', headers: { 'Authorization': token }, body: formData
+                });
+                const result = await response.json();
+                
+                if (!isAuto) {
+                    if (result.status) Swal.fire('Terikirim!', 'Laporan berhasil dikirim.', 'success');
+                    else Swal.fire('Gagal', 'Fonnte Error: ' + (result.reason || 'Unknown'), 'error');
+                }
+
+            } catch (err) {
+                console.error("WA Send Error:", err);
+                if (!isAuto) Swal.fire('Error', 'Gagal mengirim pesan: ' + err.message, 'error');
+            }
+        }
+        
+        // --- SCREENSHOT FUNCTION ---
+        function takeScreenshot(elementId, fileName) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            Swal.fire({ title: 'Mengambil Screenshot...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            html2canvas(element, { scale: 2, useCORS: true, scrollY: -window.scrollY, onclone: (clonedDoc) => {
+                    const clonedElement = clonedDoc.getElementById(elementId);
+                    const scrollableDiv = clonedElement.querySelector('.table-container-custom');
+                    if (scrollableDiv) { scrollableDiv.style.maxHeight = 'none'; scrollableDiv.style.height = 'auto'; scrollableDiv.style.overflow = 'visible'; }
+                    clonedElement.style.height = 'auto';
+                    const headers = clonedElement.querySelectorAll('thead, thead th');
+                    headers.forEach(h => { h.style.position = 'static'; });
+            }}).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${fileName}_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                Swal.close();
+            }).catch(err => { console.error(err); Swal.fire('Gagal', 'Gagal mengambil screenshot', 'error'); });
+        }
+
+        // --- AUTH & MAIN LOGIC ---
+        function showLoginModal() {
+            Swal.fire({
+                title: 'Login Admin',
+                html: `<input type="text" id="swal-username" class="swal2-input" placeholder="Username"><input type="password" id="swal-password" class="swal2-input" placeholder="Password">`,
+                confirmButtonText: 'Login', focusConfirm: false,
+                preConfirm: () => {
+                    const username = Swal.getPopup().querySelector('#swal-username').value;
+                    const password = Swal.getPopup().querySelector('#swal-password').value;
+                    if (!username || !password) Swal.showValidationMessage(`Masukkan username dan password`);
+                    return { username: username, password: password };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (result.value.username === 'admin' && result.value.password === 'admin123') doLoginSuccess();
+                    else Swal.fire('Gagal', 'Username atau password salah!', 'error');
+                }
+            });
+        }
+
+        function doLoginSuccess() {
+            isAdminLoggedIn = true;
+            document.getElementById('btn-login').classList.add('hidden');
+            document.getElementById('btn-logout').classList.remove('hidden');
+            document.getElementById('tab-admin').classList.remove('hidden');
+            Swal.fire({ icon: 'success', title: 'Berhasil Login!', timer: 1500, showConfirmButton: false });
+            loadAdminData();
+            loadWhatsAppConfig(); 
+        }
+
+        function doLogout() {
+            isAdminLoggedIn = false;
+            document.getElementById('btn-login').classList.remove('hidden');
+            document.getElementById('btn-logout').classList.add('hidden');
+            document.getElementById('tab-admin').classList.add('hidden');
+            if (activeTab === 'admin') switchTab('inventory');
+            Swal.fire('Logged Out', 'Anda telah keluar dari mode admin.', 'info');
+        }
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+            const tabInv = document.getElementById('tab-inventory'); const tabSpace = document.getElementById('tab-space'); const tabAdmin = document.getElementById('tab-admin');
+            const viewInv = document.getElementById('view-inventory'); const viewSpace = document.getElementById('view-space'); const viewAdmin = document.getElementById('view-admin');
+            const pageTitle = document.getElementById('page-title');
+            const inactiveStyle = "px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 focus:outline-none flex items-center gap-2";
+            const activeStyle = "px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-blue-600 text-blue-600 bg-blue-50 focus:outline-none flex items-center gap-2";
+            const activeAdminStyle = "px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-red-600 text-red-600 bg-red-50 focus:outline-none flex items-center gap-2";
+
+            tabInv.className = inactiveStyle; tabSpace.className = inactiveStyle; tabAdmin.className = "hidden " + inactiveStyle.replace("px-4", "px-4"); 
+            viewInv.classList.add('hidden'); viewSpace.classList.add('hidden'); viewAdmin.classList.add('hidden');
+
+            if (isAdminLoggedIn) tabAdmin.classList.remove('hidden'); else tabAdmin.classList.add('hidden');
+
+            if (tabId === 'inventory') { tabInv.className = activeStyle; viewInv.classList.remove('hidden'); pageTitle.innerText = "Detail Persediaan"; }
+            else if (tabId === 'space') { tabSpace.className = activeStyle; viewSpace.classList.remove('hidden'); pageTitle.innerText = "Actual Vs Space Analysis"; }
+            else if (tabId === 'admin' && isAdminLoggedIn) { tabAdmin.className = activeAdminStyle; viewAdmin.classList.remove('hidden'); pageTitle.innerText = "Master Data (Administrator)"; }
+            applyFilters();
+        }
+
         async function loadData() {
             document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('data-container').classList.add('hidden');
+            document.getElementById('tools-container').classList.add('hidden');
+            document.getElementById('view-inventory').classList.add('hidden');
+            document.getElementById('view-space').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
             document.getElementById('error-msg').classList.add('hidden');
             
             try {
-                const [resMain, resDesc, resQty] = await Promise.all([
-                    fetchCSV(SHEET_MAIN),
-                    fetchCSV(SHEET_DESC),
-                    fetchCSV(SHEET_QTY)
+                const [resMain, resDesc, resQty, resMaster] = await Promise.all([
+                    fetchCSV(SHEET_MAIN), fetchCSV(SHEET_DESC), fetchCSV(SHEET_QTY), fetchCSV(SHEET_MASTER_DATA)
                 ]);
+                const dataMain = resMain.data; const dataDesc = resDesc.data; const dataQty = resQty.data; const dataMaster = resMaster.data;
+                const segmentMap = new Map();
+                const masterKeys = dataMaster.length > 0 ? Object.keys(dataMaster[0]) : [];
+                const masterItemKey = masterKeys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
+                const masterSegmentKey = masterKeys.find(k => k.toLowerCase().includes('segment') || k.toLowerCase().includes('segmen') || k.toLowerCase().includes('kategori'));
+                const masterWeightKey = masterKeys.find(k => k.toLowerCase().includes('weight') || k.toLowerCase().includes('berat'));
+                const masterCapKey = masterKeys.find(k => k.toLowerCase().includes('capacity') || k.toLowerCase().includes('kapasitas') || k.toLowerCase().includes('max'));
 
-                const dataMain = resMain.data;
-                const dataDesc = resDesc.data;
-                const dataQty = resQty.data;
+                dataMaster.forEach(row => {
+                    if (masterItemKey && row[masterItemKey]) {
+                        const item = cleanStr(row[masterItemKey]);
+                        let seg = masterSegmentKey ? row[masterSegmentKey] : "UNCATEGORIZED";
+                        if (seg) seg = seg.toString().trim();
+                        const weight = masterWeightKey ? cleanNum(row[masterWeightKey]) : 50; 
+                        const maxCap = masterCapKey ? cleanNum(row[masterCapKey]) : 0;
+                        segmentMap.set(item, { segment: seg, weight: weight, maxCap: maxCap });
+                    }
+                });
 
-                // --- 1. PROSES MASTER ITEM ---
-                const descHeaders = resDesc.meta.fields || [];
                 const descKeys = dataDesc.length > 0 ? Object.keys(dataDesc[0]) : [];
                 let descItemKey = descKeys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
                 let descDescKey = descKeys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
-                
-                let segmentHeaderName = null;
-                if (descHeaders && descHeaders.length > 6) {
-                    segmentHeaderName = descHeaders[6]; // Kolom G (Index 6)
-                }
-
-                // Buat Master Map
                 const masterMap = new Map();
-                dataDesc.forEach(row => {
-                    if (descItemKey && row[descItemKey]) {
-                        let segmentVal = "-";
-                        if (segmentHeaderName && row[segmentHeaderName]) {
-                            segmentVal = row[segmentHeaderName];
-                        }
-                        if (!segmentVal || segmentVal.trim() === "") segmentVal = "UNCATEGORIZED";
-
-                        masterMap.set(cleanStr(row[descItemKey]), {
-                            desc: descDescKey ? row[descDescKey] : "Deskripsi tidak ditemukan",
-                            segment: segmentVal
-                        });
-                    }
-                });
-
-                // --- 2. PROSES DATA QTY ACTUAL ---
-                const qtyHeaders = resQty.meta.fields || [];
-                let qtyColumnName = null;
-                if (qtyHeaders && qtyHeaders.length > 8) qtyColumnName = qtyHeaders[8]; 
-                
-                let skuColumnName = null;
-                if (qtyHeaders && qtyHeaders.length > 4) skuColumnName = qtyHeaders[4];
+                dataDesc.forEach(row => { if (descItemKey && row[descItemKey]) masterMap.set(cleanStr(row[descItemKey]), { desc: descDescKey ? row[descDescKey] : "Deskripsi tidak ditemukan" }); });
 
                 const qtyKeys = dataQty.length > 0 ? Object.keys(dataQty[0]) : [];
-                
-                // Cari nama kolom exact jika index tidak ketemu
-                let qtyItemKey = skuColumnName;
-                if (!qtyItemKey) {
-                     qtyItemKey = qtyKeys.find(k => {
-                        const upper = k.toUpperCase();
-                        return upper.trim() === 'SKU' || upper.includes('SKU');
-                     });
-                }
-                
-                let qtyValKey = qtyColumnName;
-                if (!qtyValKey) {
-                    qtyValKey = qtyKeys.find(k => k.trim() === 'Qty' || k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
-                }
-
+                let qtyItemKey = qtyKeys.find(k => k.toUpperCase().includes('SKU'));
+                let qtyValKey = qtyKeys.find(k => k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
                 const qtyMap = new Map();
-                dataQty.forEach(row => {
-                    if (qtyItemKey && qtyValKey && row[qtyItemKey]) {
-                        const itemNo = cleanStr(row[qtyItemKey]);
-                        const val = cleanNum(row[qtyValKey]);
-                        
-                        if (itemNo !== "" && itemNo !== "-") {
-                            if (qtyMap.has(itemNo)) {
-                                qtyMap.set(itemNo, qtyMap.get(itemNo) + val);
-                            } else {
-                                qtyMap.set(itemNo, val);
-                            }
-                        }
-                    }
-                });
+                dataQty.forEach(row => { if (qtyItemKey && qtyValKey && row[qtyItemKey]) { const itemNo = cleanStr(row[qtyItemKey]); const val = cleanNum(row[qtyValKey]); if (itemNo !== "" && itemNo !== "-") qtyMap.set(itemNo, (qtyMap.get(itemNo) || 0) + val); } });
 
-                // --- 3. PROSES AGGREGASI DATA UTAMA ---
                 const mainKeys = dataMain.length > 0 ? Object.keys(dataMain[0]) : [];
                 const mainLocKey = mainKeys.find(k => k.toLowerCase().includes('location') || k.toLowerCase().includes('loc'));
                 const mainZoneKey = mainKeys.find(k => k.toLowerCase().includes('zone'));
                 const mainItemKey = mainKeys.find(k => k.toLowerCase().includes('item'));
                 const mainQtyBaseKey = mainKeys.find(k => k.toLowerCase().includes('base') || k.toLowerCase().includes('quantity_base'));
                 const mainUomKey = mainKeys.find(k => k.toLowerCase().includes('unit') || k.toLowerCase().includes('uom'));
-
+                const mainBinKey = mainKeys.find(k => k.toLowerCase().includes('bin'));
                 const aggregatedDataMap = new Map();
 
-                // Loop data utama (System Base)
                 dataMain.forEach(row => {
-                    const locVal = mainLocKey ? cleanStr(row[mainLocKey]) : "";
-                    const zoneVal = mainZoneKey ? cleanStr(row[mainZoneKey]) : "";
-
-                    if (locVal === "NAROGONG" && (zoneVal === "FG E" || zoneVal === "GUDANG FG")) {
-                        const itemNo = mainItemKey ? row[mainItemKey] : "-";
-                        const cleanItemNo = cleanStr(itemNo);
-                        const qtyBase = mainQtyBaseKey ? cleanNum(row[mainQtyBaseKey]) : 0;
-                        const uom = mainUomKey ? row[mainUomKey] : "";
-
-                        if (!aggregatedDataMap.has(cleanItemNo)) {
-                            aggregatedDataMap.set(cleanItemNo, {
-                                item_no: itemNo,
-                                cleanItemNo: cleanItemNo,
-                                uom: uom,
-                                qty_base_total: 0,
-                                zone: zoneVal
-                            });
-                        }
-
+                    const locVal = mainLocKey ? cleanStr(row[mainLocKey]) : ""; const zoneVal = mainZoneKey ? cleanStr(row[mainZoneKey]) : ""; const binVal = mainBinKey ? cleanStr(row[mainBinKey]) : "";
+                    const itemNo = mainItemKey ? row[mainItemKey] : "-"; const cleanItemNo = cleanStr(itemNo); const qtyBase = mainQtyBaseKey ? cleanNum(row[mainQtyBaseKey]) : 0; const uom = mainUomKey ? row[mainUomKey] : "";
+                    let addToBase = false, addToOutput = false;
+                    if (locVal === "NAROGONG" && (zoneVal === "FG E" || zoneVal === "GUDANG FG")) addToBase = true;
+                    if (locVal === "NAROGONG" && binVal.includes("OUTPUT")) addToOutput = true;
+                    if (addToBase || addToOutput) {
+                        if (!aggregatedDataMap.has(cleanItemNo)) aggregatedDataMap.set(cleanItemNo, { item_no: itemNo, cleanItemNo: cleanItemNo, uom: uom, qty_base_total: 0, qty_output_total: 0, zone: zoneVal });
                         const entry = aggregatedDataMap.get(cleanItemNo);
-                        entry.qty_base_total += qtyBase;
-                        if (uom && uom !== "") entry.uom = uom;
+                        if (addToBase) entry.qty_base_total += qtyBase; if (addToOutput) entry.qty_output_total += qtyBase; if (uom && uom !== "") entry.uom = uom;
                     }
                 });
 
-                // --- PERBAIKAN: CEK ITEM YANG ADA DI QTY TAPI TIDAK ADA DI MAIN (ATAU DI LUAR ZONE) ---
-                // Loop melalui data Qty Actual
-                qtyMap.forEach((qtyVal, itemKey) => {
-                    // Jika item ini belum ada di aggregatedDataMap (artinya tidak ada di Main sheet filteran NAROGONG)
-                    if (!aggregatedDataMap.has(itemKey)) {
-                        
-                        // Cek apakah deskripsi ada di Master Data untuk memastikan ini item valid
-                        const masterDetails = masterMap.get(itemKey);
-                        
-                        // Opsional: Jika Anda ingin hanya menampilkan yang ada di master
-                        // if (masterDetails) { ... }
-                        
-                        // Tambahkan ke map
-                        aggregatedDataMap.set(itemKey, {
-                            item_no: itemKey, // Gunakan key sebagai nomor item
-                            cleanItemNo: itemKey,
-                            uom: "-", // Default UOM karena tidak ada di Main
-                            qty_base_total: 0, // Karena tidak ada di Main pada lokasi yang difilter
-                            zone: "EXTRA (PHY)" // Penanda bahwa ini dari fisik
-                        });
-                    }
-                });
+                qtyMap.forEach((qtyVal, itemKey) => { if (!aggregatedDataMap.has(itemKey)) aggregatedDataMap.set(itemKey, { item_no: itemKey, cleanItemNo: itemKey, uom: "-", qty_base_total: 0, qty_output_total: 0, zone: "EXTRA (PHY)" }); });
 
-                // --- 4. MAP KE FINAL DATA ---
                 const finalData = Array.from(aggregatedDataMap.values()).map(entry => {
-                    const masterDetails = masterMap.get(entry.cleanItemNo) || { desc: "Deskripsi tidak ditemukan", segment: "UNCATEGORIZED" };
+                    const masterDetails = masterMap.get(entry.cleanItemNo) || { desc: "Deskripsi tidak ditemukan" };
+                    const masterInfo = segmentMap.get(entry.cleanItemNo) || { segment: "UNCATEGORIZED", weight: 50, maxCap: 0 }; 
                     const qtyActual = qtyMap.get(entry.cleanItemNo) || 0;
-                    
-                    // Hitung Variance
-                    const variance = qtyActual - entry.qty_base_total;
+                    return { segment: masterInfo.segment, weight: masterInfo.weight, max_cap: masterInfo.maxCap, item_no: entry.item_no, desc: masterDetails.desc, uom: entry.uom || "-", qty_actual: qtyActual, qty_base: entry.qty_base_total, qty_output: entry.qty_output_total, variance: qtyActual - (entry.qty_base_total + entry.qty_output_total), zone: entry.zone };
+                }).filter(item => { return (item.qty_actual !== 0 || item.qty_base !== 0 || item.qty_output !== 0) && item.desc !== "Deskripsi tidak ditemukan" && item.segment !== "UNCATEGORIZED"; });
 
-                    return {
-                        segment: masterDetails.segment,
-                        item_no: entry.item_no,
-                        desc: masterDetails.desc,
-                        uom: entry.uom || "-",
-                        qty_actual: qtyActual,
-                        qty_base: entry.qty_base_total,
-                        variance: variance,
-                        zone: entry.zone
-                    };
-                }).filter(item => {
-                    return (item.qty_actual !== 0 || item.qty_base !== 0);
-                });
+                finalData.sort((a, b) => { const priority = { "RETAIL": 1, "PROJECT": 2, "GENERAL": 3 }; const segA = a.segment ? a.segment.toUpperCase() : ""; const segB = b.segment ? b.segment.toUpperCase() : ""; const scoreA = priority[segA] || 4; const scoreB = priority[segB] || 4; if (scoreA !== scoreB) return scoreA - scoreB; return a.item_no.localeCompare(b.item_no); });
 
-                // Sort data by Segment then Item No
-                finalData.sort((a, b) => {
-                    if (a.segment < b.segment) return -1;
-                    if (a.segment > b.segment) return 1;
-                    return a.item_no.localeCompare(b.item_no);
-                });
+                if (isAdminLoggedIn) await loadAdminData();
 
                 populateSegmentFilter(finalData);
                 currentData = finalData;
-                renderTable(finalData);
                 updateStats(finalData);
+                const now = new Date(); const dateOptions = { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                document.getElementById('last-update').innerText = `Update: ${now.toLocaleString('id-ID', dateOptions)}`;
+                document.getElementById('loading').classList.add('hidden'); document.getElementById('tools-container').classList.remove('hidden'); switchTab(activeTab);
+            } catch (error) { console.error("Error fetching data:", error); document.getElementById('loading').classList.add('hidden'); document.getElementById('error-msg').classList.remove('hidden'); }
+        }
 
-                const now = new Date();
-                document.getElementById('last-update').innerText = `Update: ${now.toLocaleTimeString()}`;
-
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('data-container').classList.remove('hidden');
-
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error-msg').classList.remove('hidden');
+        async function loadAdminData() {
+            try {
+                const resAdmin = await fetchCSV(SHEET_MASTER_DATA);
+                adminData = resAdmin.data;
+                renderAdminTable(adminData);
+            } catch (err) {
+                console.error("Gagal load admin data", err);
             }
         }
 
-        function populateSegmentFilter(data) {
-            const select = document.getElementById('segment-filter');
-            const currentSelection = select.value;
-            const segments = [...new Set(data.map(item => item.segment))].sort();
-            
-            select.innerHTML = '<option value="">Semua Segment</option>';
-            
-            segments.forEach(seg => {
-                const option = document.createElement('option');
-                option.value = seg;
-                option.textContent = seg;
-                select.appendChild(option);
-            });
-
-            if (segments.includes(currentSelection)) {
-                select.value = currentSelection;
-            }
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('table-body');
-            const tfoot = document.getElementById('table-footer');
-            tbody.innerHTML = '';
-            tfoot.innerHTML = '';
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Tidak ada data yang cocok.</td></tr>';
+        async function saveAdminData() {
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "") {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Konfigurasi Belum Lengkap',
+                    html: `Fitur ini membutuhkan <b>Google Apps Script</b>.<br>
+                           Silakan deploy script di Google Sheet Anda dan masukkan URL-nya ke dalam variabel <code>GOOGLE_SCRIPT_URL</code> di source code.`,
+                    confirmButtonText: 'Mengerti'
+                });
                 return;
             }
 
-            let displayIndex = 0;
-            let totalActual = 0;
-            let totalBase = 0;
-            let totalVariance = 0;
-
-            data.forEach((row, index) => {
-                totalActual += row.qty_actual;
-                totalBase += row.qty_base;
-                totalVariance += row.variance;
-
-                displayIndex++;
-                const tr = document.createElement('tr');
-                tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 data-row transition-colors' : 'bg-gray-50 hover:bg-gray-100 data-row transition-colors';
-                tr.dataset.segmentGroup = row.segment; 
-
-                // Styling untuk Variance
-                let varianceClass = 'text-gray-900';
-                let varianceIcon = '';
-                let varianceTooltip = '';
-                let cursorStyle = '';
-
-                if (row.variance < 0) {
-                    varianceClass = 'text-red-600 font-bold';
-                    varianceIcon = '<i class="fa-solid fa-arrow-down mr-1 text-xs"></i>';
-                } else if (row.variance > 0) {
-                    varianceClass = 'text-green-600 font-bold';
-                    varianceIcon = '<i class="fa-solid fa-arrow-up mr-1 text-xs"></i>';
-                }
-
-                if (row.variance !== 0) {
-                    varianceTooltip = 'Perbedaan Qty disebabkan update di stock card tidak real time. Saat akhir shift baru akan diupdate dan dipastikan stock balance antara actual dan sistem.';
-                    cursorStyle = 'cursor-help border-b border-dotted border-gray-400';
-                }
-
-                // Styling untuk Item yang tidak ada di Base tapi ada di Actual (Kasus 121-701-0001)
-                let itemClass = "text-blue-600";
-                if (row.qty_base === 0 && row.qty_actual > 0) {
-                    itemClass = "text-purple-600 font-bold"; // Warna beda untuk menandakan extra item
-                }
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono border-r border-gray-100">${displayIndex}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-800 font-bold uppercase tracking-wide border-r border-gray-100"><span class="bg-blue-100 px-2 py-1 rounded text-xs">${row.segment}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${itemClass} border-r border-gray-100">${row.item_no}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 max-w-xs truncate md:max-w-none md:whitespace-normal border-r border-gray-100" title="${row.desc}">${row.desc}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">${row.uom}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_actual.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_base.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm ${varianceClass} ${cursorStyle}" title="${varianceTooltip}">
-                        ${varianceIcon}${row.variance.toLocaleString('id-ID')}
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            const inputs = document.querySelectorAll('.admin-capacity-input');
+            let updates = [];
+            
+            inputs.forEach(input => {
+                const itemNo = input.dataset.itemNo;
+                const newVal = input.value;
+                updates.push({
+                    itemNo: itemNo,
+                    maxCapacity: newVal
+                });
             });
 
-            // --- RENDER FOOTER TOTAL ---
-            let totalVarClass = 'text-gray-900';
-            if (totalVariance < 0) totalVarClass = 'text-red-700';
-            else if (totalVariance > 0) totalVarClass = 'text-green-700';
+            Swal.fire({
+                title: 'Menyimpan Data...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
-            tfoot.innerHTML = `
-                <tr>
-                    <td colspan="5" class="px-6 py-4 text-right text-gray-800 font-extrabold uppercase tracking-wider text-sm">TOTAL KESELURUHAN</td>
-                    <td class="px-6 py-4 text-blue-800 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-blue-50">${totalActual.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 text-gray-900 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-100">${totalBase.toLocaleString('id-ID')}</td>
-                    <td class="px-6 py-4 ${totalVarClass} font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-50">${totalVariance.toLocaleString('id-ID')}</td>
-                </tr>
-            `;
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updates)
+                });
 
-            searchTable();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Data Terkirim!',
+                    text: 'Perubahan sedang diproses oleh Google Sheet.',
+                    timer: 2000
+                });
+
+            } catch (error) {
+                console.error("Save error:", error);
+                Swal.fire('Error', 'Gagal menghubungi server.', 'error');
+            }
         }
 
         function updateStats(data) {
             document.getElementById('total-items').innerText = data.length;
             const totalBase = data.reduce((acc, curr) => acc + curr.qty_base, 0);
             document.getElementById('total-qty-base').innerText = totalBase.toLocaleString('id-ID');
+            const totalOutput = data.reduce((acc, curr) => acc + (curr.qty_output || 0), 0);
+            document.getElementById('total-qty-output').innerText = totalOutput.toLocaleString('id-ID');
+            const MAX_CAPACITY = 56549; 
+            const totalActual = data.reduce((acc, curr) => acc + curr.qty_actual, 0);
+            document.getElementById('total-qty-actual').innerText = totalActual.toLocaleString('id-ID');
+            let usagePct = (totalActual / MAX_CAPACITY) * 100;
+            let visualPct = usagePct; if (visualPct > 100) visualPct = 100; if (visualPct < 0) visualPct = 0;
+            const availablePct = 100 - usagePct; const displayAvailable = availablePct < 0 ? 0 : availablePct; 
+            document.getElementById('utilization-pct').innerText = usagePct.toFixed(1) + "%";
+            document.getElementById('available-pct').innerText = displayAvailable.toFixed(1) + "%";
+            document.getElementById('utilization-bar').style.width = visualPct + "%";
+            const bar = document.getElementById('utilization-bar');
+            if (usagePct > 90) bar.className = "bg-red-600 h-2.5 rounded-full transition-all duration-1000"; else if (usagePct > 70) bar.className = "bg-orange-500 h-2.5 rounded-full transition-all duration-1000"; else bar.className = "bg-blue-500 h-2.5 rounded-full transition-all duration-1000";
         }
-
-        function searchTable() {
+        function populateSegmentFilter(data) {
+            const select = document.getElementById('segment-filter');
+            const currentSelection = select.value;
+            const segments = [...new Set(data.map(item => item.segment))].sort();
+            select.innerHTML = '<option value="">Semua Segment</option>';
+            segments.forEach(seg => { const option = document.createElement('option'); option.value = seg; option.textContent = seg; select.appendChild(option); });
+            if (segments.includes(currentSelection)) select.value = currentSelection;
+        }
+        function applyFilters() {
             const input = document.getElementById('search-input');
             const segmentSelect = document.getElementById('segment-filter');
-            
             const filterText = input.value.toUpperCase();
             const filterSegment = segmentSelect.value;
-            
-            const tbody = document.getElementById('table-body');
-            const tfoot = document.getElementById('table-footer');
-            
-            const dataRows = tbody.querySelectorAll('tr.data-row');
-            
             let visibleCount = 0;
-            let currentFilteredTotalActual = 0;
-            let currentFilteredTotalBase = 0;
-            let currentFilteredTotalVariance = 0;
-
-            dataRows.forEach(row => {
-                const tdItem = row.children[2];
-                const tdDesc = row.children[3];
-                const groupName = row.dataset.segmentGroup; 
-                
-                const qtyActualVal = parseFloat(row.children[5].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
-                const qtyBaseVal = parseFloat(row.children[6].innerText.replace(/\./g, '').replace(/,/g, '.')) || 0;
-                const varianceVal = qtyActualVal - qtyBaseVal;
-
-                let textContent = (groupName || "") + (tdItem ? tdItem.textContent : "") + (tdDesc ? tdDesc.textContent : "");
-
-                const matchesText = textContent.toUpperCase().indexOf(filterText) > -1;
-                const matchesSegment = filterSegment === "" || groupName === filterSegment;
-
-                if (matchesText && matchesSegment) {
-                    row.style.display = "";
-                    visibleCount++;
-                    currentFilteredTotalActual += qtyActualVal;
-                    currentFilteredTotalBase += qtyBaseVal;
-                    currentFilteredTotalVariance += varianceVal;
-                } else {
-                    row.style.display = "none";
-                }
-            });
-
+            if (activeTab === 'inventory') {
+                const filteredData = currentData.filter(item => { const textContent = (item.segment || "") + (item.item_no || "") + (item.desc || ""); const matchesText = textContent.toUpperCase().indexOf(filterText) > -1; const matchesSegment = filterSegment === "" || item.segment === filterSegment; return matchesText && matchesSegment; });
+                renderInventoryTable(filteredData); visibleCount = filteredData.length;
+            } else if (activeTab === 'space') {
+                const filteredData = currentData.filter(item => { const textContent = (item.segment || "") + (item.item_no || "") + (item.desc || ""); const matchesText = textContent.toUpperCase().indexOf(filterText) > -1; const matchesSegment = filterSegment === "" || item.segment === filterSegment; return matchesText && matchesSegment; });
+                renderSpaceTable(filteredData); visibleCount = filteredData.length;
+            } else if (activeTab === 'admin') {
+                const filteredAdmin = adminData.filter(row => { const rowValues = Object.values(row).join(" ").toUpperCase(); return rowValues.indexOf(filterText) > -1; });
+                renderAdminTable(filteredAdmin); visibleCount = filteredAdmin.length;
+            }
             document.getElementById('record-count').innerText = `Menampilkan ${visibleCount} baris data`;
-
-            let totalVarClass = 'text-gray-900';
-            if (currentFilteredTotalVariance < 0) totalVarClass = 'text-red-700';
-            else if (currentFilteredTotalVariance > 0) totalVarClass = 'text-green-700';
-
-            if (visibleCount > 0) {
-                 tfoot.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-right text-gray-800 font-extrabold uppercase tracking-wider text-sm">TOTAL (FILTERED)</td>
-                        <td class="px-6 py-4 text-blue-800 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-blue-50">${currentFilteredTotalActual.toLocaleString('id-ID')}</td>
-                        <td class="px-6 py-4 text-gray-900 font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-100">${currentFilteredTotalBase.toLocaleString('id-ID')}</td>
-                        <td class="px-6 py-4 ${totalVarClass} font-extrabold text-sm whitespace-nowrap border-l border-gray-300 bg-gray-50">${currentFilteredTotalVariance.toLocaleString('id-ID')}</td>
-                    </tr>
-                `;
-                tfoot.style.display = "";
-            } else {
-                tfoot.style.display = "none";
-            }
         }
-
-        function exportExcel() {
-            if (!currentData || currentData.length === 0) {
-                alert("Tidak ada data untuk diexport!");
-                return;
-            }
-
-            const segmentSelect = document.getElementById('segment-filter');
-            const filterSegment = segmentSelect.value;
-            
-            let dataToExport = currentData;
-            
-            if (filterSegment !== "") {
-                dataToExport = currentData.filter(item => item.segment === filterSegment);
-            }
-
-            const totalActual = dataToExport.reduce((acc, curr) => acc + curr.qty_actual, 0);
-            const totalBase = dataToExport.reduce((acc, curr) => acc + curr.qty_base, 0);
-            const totalVariance = dataToExport.reduce((acc, curr) => acc + curr.variance, 0);
-
-            const exportData = dataToExport.map((row, index) => ({
-                "No": index + 1,
-                "Segment": row.segment,
-                "Item No": row.item_no,
-                "Description": row.desc,
-                "UOM": row.uom,
-                "Qty Actual": row.qty_actual,
-                "Qty Base": row.qty_base,
-                "Variance": row.variance
-            }));
-
-            exportData.push({
-                "No": "",
-                "Segment": "TOTAL",
-                "Item No": "",
-                "Description": "",
-                "UOM": "",
-                "Qty Actual": totalActual,
-                "Qty Base": totalBase,
-                "Variance": totalVariance
+        function renderInventoryTable(data) {
+             const renderSection = (tableData, tbodyId, tfootId) => {
+                const tbody = document.getElementById(tbodyId); const tfoot = document.getElementById(tfootId); tbody.innerHTML = ''; tfoot.innerHTML = '';
+                if (tableData.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500 italic">Tidak ada data untuk kategori ini.</td></tr>'; return; }
+                let totalActual = 0, totalBase = 0, totalVariance = 0, totalOutput = 0;
+                tableData.forEach((row, index) => {
+                    totalActual += row.qty_actual; totalBase += row.qty_base; totalVariance += row.variance; totalOutput += row.qty_output;
+                    const tr = document.createElement('tr'); tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 transition-colors' : 'bg-gray-50 hover:bg-gray-100 transition-colors';
+                    let varianceClass = 'text-gray-900'; if (row.variance < 0) varianceClass = 'text-red-600 font-bold'; else if (row.variance > 0) varianceClass = 'text-green-600 font-bold';
+                    tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100">${index + 1}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-blue-800 font-bold uppercase border-r border-gray-100"><span class="bg-blue-100 px-2 py-1 rounded text-xs">${row.segment}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 border-r border-gray-100">${row.item_no}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100 max-w-xs truncate" title="${row.desc}">${row.desc}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100">${row.uom}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-blue-700 font-bold border-r border-gray-100 bg-blue-50">${row.qty_output.toLocaleString('id-ID')}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_actual.toLocaleString('id-ID')}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-100 font-medium">${row.qty_base.toLocaleString('id-ID')}</td><td class="px-6 py-4 whitespace-nowrap text-sm ${varianceClass}">${row.variance.toLocaleString('id-ID')}</td>`;
+                    tbody.appendChild(tr);
+                });
+                tfoot.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-right text-gray-800 font-extrabold text-sm">TOTAL</td><td class="px-6 py-4 text-blue-900 font-extrabold text-sm border-l border-gray-300 bg-blue-100">${totalOutput.toLocaleString('id-ID')}</td><td class="px-6 py-4 text-blue-800 font-extrabold text-sm border-l border-gray-300 bg-blue-50">${totalActual.toLocaleString('id-ID')}</td><td class="px-6 py-4 text-gray-900 font-extrabold text-sm border-l border-gray-300 bg-gray-100">${totalBase.toLocaleString('id-ID')}</td><td class="px-6 py-4 font-extrabold text-sm border-l border-gray-300 bg-gray-50 ${totalVariance < 0 ? 'text-red-700' : 'text-green-700'}">${totalVariance.toLocaleString('id-ID')}</td></tr>`;
+            };
+            const mainData = data.filter(item => { const seg = item.segment ? item.segment.toUpperCase() : ""; return !seg.includes('GENERAL'); }); renderSection(mainData, 'tbody-inventory-main', 'tfoot-inventory-main');
+            const generalData = data.filter(item => { const seg = item.segment ? item.segment.toUpperCase() : ""; return seg.includes('GENERAL'); }); renderSection(generalData, 'tbody-inventory-general', 'tfoot-inventory-general');
+        }
+        function renderSpaceTable(data) {
+             const renderTableSection = (tableData, tbodyId, tfootId, isStacking) => {
+                const tbody = document.getElementById(tbodyId); const tfoot = document.getElementById(tfootId); const tableContainer = tbody.closest('table'); const thead = tableContainer.querySelector('thead');
+                tbody.innerHTML = ''; tfoot.innerHTML = '';
+                const unitLabel = isStacking ? "ZAK" : "PAC";
+                thead.innerHTML = `<tr><th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Item Code</th><th rowspan="2" class="px-4 py-2 text-left text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 w-64">Desc</th><th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Segment</th><th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Weight</th><th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-blue-800 uppercase border-r border-gray-200">Balance Stock WH FG (Plant-NAR)</th><th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-slate-600 uppercase border-r border-gray-200">Max Capacity WH FG Plant</th><th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai</th><th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Space Area<br>(Plant NAR)</th></tr><tr><th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">${unitLabel}</th><th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">Ton</th><th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-blue-50 border-r border-gray-200">PALLET</th><th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">${unitLabel}</th><th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">Ton</th><th class="px-2 py-1 text-center text-xs font-bold text-slate-700 bg-gray-50 border-r border-gray-200">PALLET</th></tr>`;
+                if (tableData.length === 0) { tbody.innerHTML = '<tr><td colspan="12" class="px-6 py-4 text-center text-gray-500 italic">Tidak ada data untuk kategori ini.</td></tr>'; return; }
+                let totalZak = 0, totalTon = 0, totalPallet = 0, totalMaxZak = 0, totalMaxTon = 0, totalMaxPallet = 0;
+                tableData.forEach((row) => {
+                    const weight = row.weight || 50; const zak = row.qty_actual; const ton = (zak * weight) / 1000; const pallet = ton / 2; 
+                    let maxCapZak = 0; if (isStacking) maxCapZak = 56549; else maxCapZak = row.max_cap || 0;
+                    const maxCapTon = (maxCapZak * weight) / 1000; const maxCapPallet = maxCapTon / 2;
+                    let areaUsedPct = 0; if (maxCapZak > 0) areaUsedPct = (zak / maxCapZak) * 100;
+                    const displayAreaUsed = areaUsedPct > 100 ? 100 : areaUsedPct; const spaceAreaPct = 100 - displayAreaUsed;
+                    totalZak += zak; totalTon += ton; totalPallet += pallet; if (!isStacking) { totalMaxZak += maxCapZak; totalMaxTon += maxCapTon; totalMaxPallet += maxCapPallet; }
+                    const tr = document.createElement('tr'); tr.className = 'bg-white hover:bg-gray-50 transition-colors'; 
+                    tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 border-r border-gray-100 text-center">${row.item_no}</td><td class="px-4 py-3 text-sm text-gray-700 border-r border-gray-100 max-w-xs truncate" title="${row.desc}">${row.desc}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-gray-600 border-r border-gray-100">${row.segment}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-100">${weight}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${zak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${ton.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${pallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600 bg-gray-50 border-r border-gray-200 font-semibold">${maxCapZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 bg-gray-50 border-r border-gray-200">${maxCapTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 bg-gray-50 border-r border-gray-200">${maxCapPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold ${areaUsedPct > 90 ? 'text-red-600' : 'text-blue-600'} border-r border-gray-100">${areaUsedPct.toFixed(1)}%</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold ${spaceAreaPct < 10 ? 'text-red-600' : 'text-green-600'} border-r border-gray-100">${spaceAreaPct.toFixed(1)}%</td>`;
+                    tbody.appendChild(tr);
+                });
+                let footerMaxZak = 0; let footerMaxTon = 0; let footerMaxPallet = 0;
+                if (isStacking) { footerMaxZak = 56549; } else { footerMaxZak = totalMaxZak; footerMaxTon = totalMaxTon; footerMaxPallet = totalMaxPallet; }
+                let footerAreaUsedPct = 0; if (footerMaxZak > 0) footerAreaUsedPct = (totalZak / footerMaxZak) * 100;
+                const footerDisplayAreaUsed = footerAreaUsedPct > 100 ? 100 : footerAreaUsedPct; const footerSpaceAreaPct = 100 - footerDisplayAreaUsed;
+                tfoot.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-right text-gray-800 font-extrabold text-sm">TOTAL</td><td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${footerMaxZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${isStacking ? '-' : footerMaxTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${isStacking ? '-' : footerMaxPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-center font-extrabold text-sm bg-gray-100 border-l border-gray-300 ${footerAreaUsedPct > 90 ? 'text-red-700' : 'text-blue-700'}">${footerAreaUsedPct.toFixed(1)}%</td><td class="px-4 py-3 text-center font-extrabold text-sm bg-gray-100 border-l border-gray-300 ${footerSpaceAreaPct < 10 ? 'text-red-700' : 'text-green-700'}">${footerSpaceAreaPct.toFixed(1)}%</td></tr>`;
+            };
+            const stackingData = data.filter(item => { const seg = item.segment.toUpperCase(); return !seg.includes('GENERAL'); }); renderTableSection(stackingData, 'tbody-space-stacking', 'tfoot-space-stacking', true); 
+            const rackData = data.filter(item => item.segment.toUpperCase().includes('GENERAL')); renderTableSection(rackData, 'tbody-space-rack', 'tfoot-space-rack', false); 
+        }
+        function renderAdminTable(data) {
+            const theadRow = document.getElementById('thead-admin-row'); const tbody = document.getElementById('tbody-admin'); theadRow.innerHTML = ''; tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = '<tr><td class="px-6 py-4 text-center text-gray-500">Tidak ada data master ditemukan.</td></tr>'; return; }
+            const headers = Object.keys(data[0]); headers.unshift("No"); const capacityHeaderName = "Max Capacity"; if (!headers.includes(capacityHeaderName)) headers.push(capacityHeaderName);
+            headers.forEach(header => { const th = document.createElement('th'); th.className = "px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200"; th.innerText = header; theadRow.appendChild(th); });
+            data.forEach((row, index) => {
+                const tr = document.createElement('tr'); tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 transition-colors' : 'bg-gray-50 hover:bg-gray-100 transition-colors';
+                const tdNo = document.createElement('td'); tdNo.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100"; tdNo.innerText = index + 1; tr.appendChild(tdNo);
+                Object.values(row).forEach(val => { const td = document.createElement('td'); td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100"; td.innerText = val; tr.appendChild(td); });
+                const tdInput = document.createElement('td'); tdInput.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100";
+                const existingVal = row['Max Capacity'] || row['Capacity'] || ""; const itemNoKey = Object.keys(row).find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no')) || ""; const itemNo = row[itemNoKey] || `ROW-${index}`;
+                tdInput.innerHTML = `<input type="number" class="admin-capacity-input w-full border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" value="${existingVal}" data-item-no="${itemNo}">`;
+                tr.appendChild(tdInput); tbody.appendChild(tr);
             });
-
-            const csv = Papa.unparse(exportData);
-            const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            
-            const d = new Date();
-            const dateStr = d.toISOString().slice(0,10);
-            const timeStr = d.toTimeString().slice(0,8).replace(/:/g,"");
-
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Inventory_Narogong_${dateStr}_${timeStr}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        }
+        function exportExcel() {
+             if (!currentData || currentData.length === 0) { alert("Tidak ada data untuk diexport!"); return; }
+             const input = document.getElementById('search-input'); const segmentSelect = document.getElementById('segment-filter'); const filterText = input.value.toUpperCase(); const filterSegment = segmentSelect.value;
+             const dataToExport = currentData.filter(item => { const textContent = (item.segment || "") + (item.item_no || "") + (item.desc || ""); const matchesText = textContent.toUpperCase().indexOf(filterText) > -1; const matchesSegment = filterSegment === "" || item.segment === filterSegment; return matchesText && matchesSegment; });
+             const wb = XLSX.utils.book_new(); let ws; let fileNamePrefix = "";
+             if (activeTab === 'inventory') {
+                 fileNamePrefix = "Inventory_Detail"; ws = XLSX.utils.aoa_to_sheet([]); const ws_data = [];
+                 function addInvSection(title, data) {
+                     ws_data.push([title]); ws_data.push(["No", "Segment", "Item No", "Description", "UOM", "Output Produksi", "Qty Actual", "Qty Base", "Variance"]);
+                     let tAct = 0, tBase = 0, tVar = 0, tOut = 0;
+                     data.forEach((row, i) => { tAct += row.qty_actual; tBase += row.qty_base; tVar += row.variance; tOut += row.qty_output; ws_data.push([i+1, row.segment, row.item_no, row.desc, row.uom, row.qty_output, row.qty_actual, row.qty_base, row.variance]); });
+                     ws_data.push(["", "TOTAL", "", "", "", tOut, tAct, tBase, tVar]); ws_data.push([]);
+                 }
+                 const mainData = dataToExport.filter(i => !i.segment.toUpperCase().includes('GENERAL')); addInvSection("RETAIL & PROJECT", mainData);
+                 const genData = dataToExport.filter(i => i.segment.toUpperCase().includes('GENERAL')); addInvSection("GENERAL", genData);
+                 ws = XLSX.utils.aoa_to_sheet(ws_data); ws['!cols'] = [{wch:5}, {wch:15}, {wch:20}, {wch:40}, {wch:8}, {wch:15}, {wch:12}, {wch:12}, {wch:12}];
+             } else if (activeTab === 'space') {
+                 fileNamePrefix = "Actual_Vs_Space"; ws = XLSX.utils.aoa_to_sheet([]); const ws_data = []; const merges = [];
+                 function addSpaceSection(title, data, isStacking, startRow) {
+                     const unitLabel = isStacking ? "ZAK" : "PAC";
+                     ws_data.push([title]); merges.push({s:{r:startRow, c:0}, e:{r:startRow, c:11}});
+                     ws_data.push(["Item Code", "Desc", "Segment", "Weight", "Balance Stock WH FG (Plant-NAR)", "", "", "Max Capacity WH FG Plant", "", "", "Area Terpakai", "Space Area (Plant NAR)"]);
+                     ws_data.push(["", "", "", "", unitLabel, "Ton", "PALLET", unitLabel, "Ton", "PALLET", "", ""]);
+                     const r1 = startRow + 1; merges.push({s:{r:r1,c:0}, e:{r:r1+1,c:0}}); merges.push({s:{r:r1,c:1}, e:{r:r1+1,c:1}}); merges.push({s:{r:r1,c:2}, e:{r:r1+1,c:2}}); merges.push({s:{r:r1,c:3}, e:{r:r1+1,c:3}}); merges.push({s:{r:r1,c:4}, e:{r:r1,c:6}}); merges.push({s:{r:r1,c:7}, e:{r:r1,c:9}}); merges.push({s:{r:r1,c:10}, e:{r:r1+1,c:10}}); merges.push({s:{r:r1,c:11}, e:{r:r1+1,c:11}});
+                     let tZak=0, tTon=0, tPal=0; let tmZak=0, tmTon=0, tmPal=0;
+                     data.forEach(row => {
+                         const weight = row.weight || 50; const zak = row.qty_actual; const ton = (zak * weight) / 1000; const pallet = ton / 2;
+                         let mcZak = isStacking ? 56549 : (row.max_cap || 0); let mcTon = (mcZak * weight) / 1000; let mcPal = mcTon / 2;
+                         let areaPct = mcZak > 0 ? (zak/mcZak)*100 : 0; let spacePct = 100 - (areaPct > 100 ? 100 : areaPct);
+                         tZak+=zak; tTon+=ton; tPal+=pallet; if(!isStacking) { tmZak+=mcZak; tmTon+=mcTon; tmPal+=mcPal; }
+                         ws_data.push([row.item_no, row.desc, row.segment, weight, zak, ton, pallet, mcZak, mcTon, mcPal, areaPct.toFixed(1)+"%", spacePct.toFixed(1)+"%"]);
+                     });
+                     let fZak = isStacking ? 56549 : tmZak; let fTon = isStacking ? "-" : tmTon; let fPal = isStacking ? "-" : tmPal;
+                     let fArea = fZak > 0 ? (tZak/fZak)*100 : 0; let fSpace = 100 - (fArea > 100 ? 100 : fArea);
+                     ws_data.push(["TOTAL", "", "", "", tZak, tTon, tPal, fZak, fTon, fPal, fArea.toFixed(1)+"%", fSpace.toFixed(1)+"%"]); ws_data.push([]);
+                 }
+                 const stackingData = dataToExport.filter(i => !i.segment.toUpperCase().includes('GENERAL')); addSpaceSection("STORAGE : PALLET POSITION / STACKING", stackingData, true, 0);
+                 const rackData = dataToExport.filter(i => i.segment.toUpperCase().includes('GENERAL')); addSpaceSection("STORAGE : RACK", rackData, false, ws_data.length);
+                 ws = XLSX.utils.aoa_to_sheet(ws_data); ws['!merges'] = merges; ws['!cols'] = [{wch:15}, {wch:40}, {wch:15}, {wch:8}, {wch:12}, {wch:12}, {wch:10}, {wch:12}, {wch:12}, {wch:10}, {wch:15}, {wch:15}];
+             } else if (activeTab === 'admin') {
+                 fileNamePrefix = "Master_Data_Admin"; const headers = Object.keys(adminData[0]); const ws_data = [headers]; adminData.forEach(row => ws_data.push(Object.values(row))); ws = XLSX.utils.aoa_to_sheet(ws_data);
+             }
+             XLSX.utils.book_append_sheet(wb, ws, "Data");
+             const d = new Date(); const dateStr = d.toISOString().slice(0,10); const fileName = `${fileNamePrefix}_${dateStr}.xlsx`; XLSX.writeFile(wb, fileName);
         }
 
+        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
+            loadWhatsAppConfig(); // Load config immediately
             setInterval(loadData, REFRESH_INTERVAL);
         });
     </script>
