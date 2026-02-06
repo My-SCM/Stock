@@ -218,9 +218,6 @@
             <button onclick="switchTab('min-stock')" id="tab-min-stock" class="px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 focus:outline-none flex items-center gap-2">
                 <i class="fa-solid fa-temperature-arrow-down"></i> Min Stock
             </button>
-            <button onclick="switchTab('abc')" id="tab-abc" class="px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 focus:outline-none flex items-center gap-2">
-                <i class="fa-solid fa-sort-amount-down"></i> ABC Analysis
-            </button>
             <button onclick="switchTab('admin')" id="tab-admin" class="hidden px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-red-600 hover:text-red-800 hover:bg-red-50 focus:outline-none flex items-center gap-2">
                 <i class="fa-solid fa-database"></i> Master Data (Admin)
             </button>
@@ -229,7 +226,7 @@
         <!-- Loading State -->
         <div id="loading" class="flex flex-col items-center justify-center py-12">
             <div class="spinner mb-4"></div>
-            <p class="text-gray-600 animate-pulse">Mengambil data dari Google Sheets...</p>
+            <p class="text-gray-600 animate-pulse">Mengambil data dari Google Sheets & Firebase...</p>
         </div>
 
         <!-- Error State -->
@@ -243,7 +240,8 @@
              <div class="flex items-center gap-3 w-full lg:w-auto">
                 <h3 class="text-lg font-bold text-gray-800" id="page-title">Detail Persediaan</h3>
              </div>
-             <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+             <!-- Standard Tools -->
+             <div id="standard-tools" class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                   <div class="relative w-full sm:w-48 group">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-hover:text-blue-500 transition-colors">
                         <i class="fa-solid fa-filter text-xs"></i>
@@ -346,7 +344,7 @@
                                 <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Weight</th>
                                 <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-blue-800 uppercase border-r border-gray-200">Balance Stock WH FG (Plant-NAR)</th>
                                 <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-slate-600 uppercase border-r border-gray-200">Max Capacity WH FG Plant</th>
-                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai<br>(Based on TON)</th>
                                 <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Space Area<br>(Plant NAR)</th>
                             </tr>
                             <tr>
@@ -384,7 +382,7 @@
                                 <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Weight</th>
                                 <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-blue-800 uppercase border-r border-gray-200">Balance Stock WH FG (Plant-NAR)</th>
                                 <th colspan="3" class="px-4 py-2 text-center text-xs font-extrabold text-white bg-slate-600 uppercase border-r border-gray-200">Max Capacity WH FG Plant</th>
-                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai</th>
+                                <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Area Terpakai<br>(Based on TON)</th>
                                 <th rowspan="2" class="px-4 py-2 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Space Area<br>(Plant NAR)</th>
                             </tr>
                             <tr>
@@ -470,71 +468,8 @@
             </div>
         </div>
 
-        <!-- VIEW 4: ABC Analysis (NEW) -->
-        <div id="view-abc" class="hidden fade-in space-y-8 pb-8">
-            <!-- Stats for ABC -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm flex items-center justify-between">
-                    <div>
-                        <h5 class="text-sm font-bold text-green-800 uppercase">Kelas A (0-80%)</h5>
-                        <p class="text-xs text-green-600">High Volume</p>
-                    </div>
-                    <div class="text-right">
-                        <h3 class="text-xl font-bold text-green-700" id="abc-count-a">0</h3>
-                        <p class="text-xs text-gray-500">Items</p>
-                    </div>
-                </div>
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm flex items-center justify-between">
-                    <div>
-                        <h5 class="text-sm font-bold text-blue-800 uppercase">Kelas B (80-95%)</h5>
-                        <p class="text-xs text-blue-600">Medium Volume</p>
-                    </div>
-                    <div class="text-right">
-                        <h3 class="text-xl font-bold text-blue-700" id="abc-count-b">0</h3>
-                        <p class="text-xs text-gray-500">Items</p>
-                    </div>
-                </div>
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex items-center justify-between">
-                    <div>
-                        <h5 class="text-sm font-bold text-gray-800 uppercase">Kelas C (95-100%)</h5>
-                        <p class="text-xs text-gray-600">Low Volume</p>
-                    </div>
-                    <div class="text-right">
-                        <h3 class="text-xl font-bold text-gray-700" id="abc-count-c">0</h3>
-                        <p class="text-xs text-gray-500">Items</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table ABC -->
-            <div id="capture-abc" class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
-                <div class="px-6 py-4 bg-gradient-to-r from-emerald-800 to-emerald-700 border-b border-emerald-600 text-white flex items-center justify-between">
-                    <h4 class="font-bold tracking-wide flex items-center"><i class="fa-solid fa-sort-amount-down mr-2"></i>ABC ANALYSIS (PARETO)</h4>
-                    <span class="text-xs bg-emerald-600 px-2 py-1 rounded border border-emerald-500 shadow-sm">Based on Movement Output</span>
-                </div>
-                <div class="table-container-custom bg-white">
-                    <table class="min-w-full divide-y divide-gray-200 relative border-collapse text-sm">
-                        <thead class="bg-slate-100">
-                            <tr>
-                                <th class="px-4 py-3 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 w-16">Rank</th>
-                                <th class="px-4 py-3 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 w-16">Class</th>
-                                <th class="px-4 py-3 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Item No</th>
-                                <th class="px-4 py-3 text-left text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 w-64">Description</th>
-                                <th class="px-4 py-3 text-center text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Segment</th>
-                                <th class="px-4 py-3 text-right text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200 bg-blue-50">Output Qty</th>
-                                <th class="px-4 py-3 text-right text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">% Contrib</th>
-                                <th class="px-4 py-3 text-right text-xs font-extrabold text-slate-700 uppercase border-r border-gray-200">Cumulative %</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-abc" class="bg-white divide-y divide-gray-200"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW 5: Admin Master Data (Updated with WhatsApp Config) -->
+        <!-- VIEW 6: Admin Master Data (Updated with WhatsApp Config) -->
         <div id="view-admin" class="hidden fade-in space-y-8 pb-8">
-            
             <!-- WhatsApp Config Card -->
             <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-100">
                 <div class="px-6 py-4 bg-green-600 border-b border-green-700 text-white">
@@ -551,7 +486,7 @@
                             <input type="text" id="wa-target" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Contoh: 12036... atau 0812...">
                         </div>
                         
-                        <!-- NEW: Flexible Schedule -->
+                        <!-- Flexible Schedule -->
                         <div class="col-span-2">
                             <label class="block text-gray-700 text-sm font-bold mb-2">Jadwal Pengiriman</label>
                             
@@ -606,7 +541,7 @@
                  <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                     <h4 class="font-bold text-gray-700">Editor Master Data</h4>
                     <button onclick="saveAdminData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow flex items-center gap-2">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Spreadsheet
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Firebase
                     </button>
                  </div>
                 <div class="table-container-custom bg-white">
@@ -638,8 +573,7 @@
         const SHEET_DESC = 'https://docs.google.com/spreadsheets/d/11-kYb81CtGvf_1ukf_mj6W5Cn_tktqe6blGM4Rc2MZU/export?format=csv&gid=0';
         const SHEET_QTY  = 'https://docs.google.com/spreadsheets/d/1OOhR4CiIgjLNbVdIQsc6bLxz0nCwhr9lDdmL7zm6wIc/export?format=csv&gid=1628010390';
         const SHEET_MASTER_DATA = 'https://docs.google.com/spreadsheets/d/13VzI80K9j4gNahVLrNGfIjTS45A0TS9PqYNcwldlnXQ/export?format=csv&gid=1604406281';
-        const GOOGLE_SCRIPT_URL = ""; 
-
+        
         // Firebase Config
         const firebaseConfig = {
           apiKey: "AIzaSyCYpQaaDgT8GPcvTFnEET-srZEni8TUyyg",
@@ -665,7 +599,7 @@
         let waTimer = null;
         let scheduledTimes = []; // Store times in memory
         let lastSentTime = ""; // Prevent duplicate sends
-
+        
         function fetchCSV(url) {
             return new Promise((resolve, reject) => {
                 Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: (res) => resolve(res), error: (err) => reject(err) });
@@ -775,7 +709,6 @@
             }
             if (days.length === 0 || scheduledTimes.length === 0) {
                 Swal.fire('Warning', 'Harap pilih minimal satu Hari dan satu Jam.', 'warning');
-                // Allow save but warn
             }
 
             try {
@@ -813,29 +746,24 @@
         }
 
         function checkScheduleAndSend() {
-            // Get Config from UI (assuming it's loaded and sync with state)
-            // Or rely on the in-memory variables if page hasn't reloaded
             const active = document.getElementById('wa-active').checked;
             if (!active) return;
 
             const now = new Date();
             const currentDay = now.getDay(); // 0-6
-            // Format time HH:MM
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const currentTime = `${hours}:${minutes}`;
 
-            // Check Day
             const checkedDays = [];
             document.querySelectorAll('#wa-days-container input[type="checkbox"]:checked').forEach(cb => {
                 checkedDays.push(parseInt(cb.value));
             });
 
             if (checkedDays.includes(currentDay) && scheduledTimes.includes(currentTime)) {
-                // Check if already sent this minute
                 if (lastSentTime !== currentTime) {
                     console.log(`Triggering Auto Send at ${currentTime}`);
-                    testWhatsApp(true); // Send!
+                    testWhatsApp(true); 
                     lastSentTime = currentTime;
                 }
             }
@@ -855,33 +783,27 @@
             }
 
             try {
-                // 1. Calculate Utilization (Retail + Project Actuals vs 56549)
+                // Calculation Logic for Message (Same as before)
                 const stackingData = currentData.filter(item => {
                     const seg = item.segment ? item.segment.toUpperCase() : "";
                     return seg === 'RETAIL' || seg === 'PROJECT';
                 });
                 
-                // Use Actual Quantities for Space Utilization
                 const totalActualStacking = stackingData.reduce((acc, curr) => acc + curr.qty_actual, 0);
                 const utilizationPct = (totalActualStacking / 56549) * 100;
 
-                // 2. Group Data by Segment for Listing (Using System Qty: Base + Output)
                 const grouped = {};
                 currentData.forEach(item => {
-                    // Skip Uncategorized
                     if (item.segment === "UNCATEGORIZED") return;
-
                     const seg = item.segment || "OTHER";
                     if (!grouped[seg]) grouped[seg] = [];
                     grouped[seg].push(item);
                 });
 
-                // 3. Build Message
                 let msg = `*Laporan Otomatis Inventory Narogong*\n`;
                 msg += `Tanggal: ${new Date().toLocaleString('id-ID')}\n\n`;
                 msg += `*DETAIL PERSEDIAAN*\n\n`;
 
-                // Sort segments: RETAIL, PROJECT, GENERAL, Others
                 const priority = { "RETAIL": 1, "PROJECT": 2, "GENERAL": 3 };
                 const sortedSegments = Object.keys(grouped).sort((a, b) => {
                       const scoreA = priority[a.toUpperCase()] || 4;
@@ -891,20 +813,14 @@
 
                 sortedSegments.forEach(seg => {
                     msg += `*${seg}*\n`;
-                    // Sort items in segment
                     grouped[seg].sort((a, b) => a.item_no.localeCompare(b.item_no));
                     
                     grouped[seg].forEach(item => {
-                        // Calculate System Qty (Base + Output)
                         const totalSystem = item.qty_base + (item.qty_output || 0);
-                        // Format: ItemNo Description: Qty
-                        // Truncate desc if too long
                         const shortDesc = item.desc.length > 25 ? item.desc.substring(0, 25) + '...' : item.desc;
                         
-                        if (totalSystem > 0) { // Only list items with system stock
-                            // Determine unit label using stricter check
+                        if (totalSystem > 0) { 
                             const unitLabel = seg.toUpperCase().includes("GENERAL") ? "PAC" : "ZAK";
-                            // UPDATE: Qty only Bold (*)
                             msg += `- ${item.item_no} ${shortDesc}: *${totalSystem.toLocaleString('id-ID')}* ${unitLabel}\n`;
                         }
                     });
@@ -915,7 +831,6 @@
                 msg += `_Stok berdasarkan data ERP (Bin Content FG) dan output produksi._\n`;
                 msg += `_Utilisasi Warehouse ZONE Finish Good (PALLET POSITION / STACKING): ${utilizationPct.toFixed(2)}%_\n`;
 
-                // 4. Send
                 const formData = new FormData();
                 formData.append('target', target);
                 formData.append('message', msg);
@@ -998,23 +913,29 @@
 
         function switchTab(tabId) {
             activeTab = tabId;
-            const tabInv = document.getElementById('tab-inventory'); const tabSpace = document.getElementById('tab-space'); const tabMinStock = document.getElementById('tab-min-stock'); const tabAbc = document.getElementById('tab-abc'); const tabAdmin = document.getElementById('tab-admin');
-            const viewInv = document.getElementById('view-inventory'); const viewSpace = document.getElementById('view-space'); const viewMinStock = document.getElementById('view-min-stock'); const viewAbc = document.getElementById('view-abc'); const viewAdmin = document.getElementById('view-admin');
+            const tabInv = document.getElementById('tab-inventory'); const tabSpace = document.getElementById('tab-space'); const tabMinStock = document.getElementById('tab-min-stock'); const tabAdmin = document.getElementById('tab-admin');
+            
+            const viewInv = document.getElementById('view-inventory'); const viewSpace = document.getElementById('view-space'); const viewMinStock = document.getElementById('view-min-stock'); const viewAdmin = document.getElementById('view-admin');
+            
             const pageTitle = document.getElementById('page-title');
+            const standardTools = document.getElementById('standard-tools');
             
             const inactiveStyle = "px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50 focus:outline-none flex items-center gap-2";
             const activeStyle = "px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-blue-600 text-blue-600 bg-blue-50 focus:outline-none flex items-center gap-2";
             const activeAdminStyle = "px-4 py-2 rounded-t-lg font-bold text-sm transition-colors duration-200 border-b-2 border-red-600 text-red-600 bg-red-50 focus:outline-none flex items-center gap-2";
 
-            tabInv.className = inactiveStyle; tabSpace.className = inactiveStyle; tabMinStock.className = inactiveStyle; tabAbc.className = inactiveStyle; tabAdmin.className = "hidden " + inactiveStyle.replace("px-4", "px-4"); 
-            viewInv.classList.add('hidden'); viewSpace.classList.add('hidden'); viewMinStock.classList.add('hidden'); viewAbc.classList.add('hidden'); viewAdmin.classList.add('hidden');
+            tabInv.className = inactiveStyle; tabSpace.className = inactiveStyle; tabMinStock.className = inactiveStyle; 
+            tabAdmin.className = "hidden " + inactiveStyle.replace("px-4", "px-4"); 
+            
+            viewInv.classList.add('hidden'); viewSpace.classList.add('hidden'); viewMinStock.classList.add('hidden'); viewAdmin.classList.add('hidden');
 
             if (isAdminLoggedIn) tabAdmin.classList.remove('hidden'); else tabAdmin.classList.add('hidden');
+            
+            standardTools.classList.remove('hidden'); // Default show tools
 
             if (tabId === 'inventory') { tabInv.className = activeStyle; viewInv.classList.remove('hidden'); pageTitle.innerText = "Detail Persediaan"; }
             else if (tabId === 'space') { tabSpace.className = activeStyle; viewSpace.classList.remove('hidden'); pageTitle.innerText = "Actual Vs Space Analysis"; }
             else if (tabId === 'min-stock') { tabMinStock.className = activeStyle; viewMinStock.classList.remove('hidden'); pageTitle.innerText = "Minimum Stock Monitoring"; }
-            else if (tabId === 'abc') { tabAbc.className = activeStyle; viewAbc.classList.remove('hidden'); pageTitle.innerText = "ABC Analysis (Pareto)"; }
             else if (tabId === 'admin' && isAdminLoggedIn) { tabAdmin.className = activeAdminStyle; viewAdmin.classList.remove('hidden'); pageTitle.innerText = "Master Data (Administrator)"; }
             applyFilters();
         }
@@ -1025,15 +946,28 @@
             document.getElementById('view-inventory').classList.add('hidden');
             document.getElementById('view-space').classList.add('hidden');
             document.getElementById('view-min-stock').classList.add('hidden');
-            document.getElementById('view-abc').classList.add('hidden');
             document.getElementById('view-admin').classList.add('hidden');
             document.getElementById('error-msg').classList.add('hidden');
             
             try {
+                // Fetch ALL data sources (CSVs)
                 const [resMain, resDesc, resQty, resMaster] = await Promise.all([
                     fetchCSV(SHEET_MAIN), fetchCSV(SHEET_DESC), fetchCSV(SHEET_QTY), fetchCSV(SHEET_MASTER_DATA)
                 ]);
                 const dataMain = resMain.data; const dataDesc = resDesc.data; const dataQty = resQty.data; const dataMaster = resMaster.data;
+
+                // FETCH FIREBASE MASTER DATA (Min Stock Overrides)
+                let firestoreMaster = {};
+                try {
+                    const snapshot = await db.collection('inventory_master').get();
+                    snapshot.forEach(doc => {
+                        firestoreMaster[doc.id] = doc.data();
+                    });
+                } catch (e) { 
+                    console.error("Firestore fetch error", e); 
+                }
+
+                // --- PROCESS MASTER DATA ---
                 const segmentMap = new Map();
                 const masterKeys = dataMaster.length > 0 ? Object.keys(dataMaster[0]) : [];
                 const masterItemKey = masterKeys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
@@ -1048,18 +982,36 @@
                         let seg = masterSegmentKey ? row[masterSegmentKey] : "UNCATEGORIZED";
                         if (seg) seg = seg.toString().trim();
                         const weight = masterWeightKey ? cleanNum(row[masterWeightKey]) : 50; 
-                        const maxCap = masterCapKey ? cleanNum(row[masterCapKey]) : 0;
-                        const minStock = masterMinKey ? cleanNum(row[masterMinKey]) : 0; // NEW
-                        segmentMap.set(item, { segment: seg, weight: weight, maxCap: maxCap, minStock: minStock });
+                        
+                        // Default values from CSV (Unit/ZAK)
+                        let maxCap = masterCapKey ? cleanNum(row[masterCapKey]) : 0;
+                        let minStockUnit = masterMinKey ? cleanNum(row[masterMinKey]) : 0; 
+
+                        // Override with Firebase data if exists
+                        if (firestoreMaster[item]) {
+                            if (firestoreMaster[item].min_stock !== undefined) {
+                                // Firestore stores TONS. Convert to UNITS for internal calculation consistency.
+                                // Unit = (Ton * 1000) / Weight
+                                const minStockTon = Number(firestoreMaster[item].min_stock);
+                                minStockUnit = (minStockTon * 1000) / weight;
+                            }
+                            if (firestoreMaster[item].max_cap !== undefined) {
+                                maxCap = Number(firestoreMaster[item].max_cap);
+                            }
+                        }
+
+                        segmentMap.set(item, { segment: seg, weight: weight, maxCap: maxCap, minStock: minStockUnit });
                     }
                 });
 
+                // --- PROCESS DESCRIPTIONS ---
                 const descKeys = dataDesc.length > 0 ? Object.keys(dataDesc[0]) : [];
                 let descItemKey = descKeys.find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no'));
                 let descDescKey = descKeys.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('description'));
                 const masterMap = new Map();
                 dataDesc.forEach(row => { if (descItemKey && row[descItemKey]) masterMap.set(cleanStr(row[descItemKey]), { desc: descDescKey ? row[descDescKey] : "Deskripsi tidak ditemukan" }); });
 
+                // --- PROCESS INVENTORY DATA (EXISTING) ---
                 const qtyKeys = dataQty.length > 0 ? Object.keys(dataQty[0]) : [];
                 let qtyItemKey = qtyKeys.find(k => k.toUpperCase().includes('SKU'));
                 let qtyValKey = qtyKeys.find(k => k.toLowerCase().includes('qty') || k.toLowerCase().includes('quantity'));
@@ -1098,7 +1050,7 @@
                         segment: masterInfo.segment, 
                         weight: masterInfo.weight, 
                         max_cap: masterInfo.maxCap, 
-                        min_stock: masterInfo.minStock, // NEW
+                        min_stock: masterInfo.minStock,
                         item_no: entry.item_no, 
                         desc: masterDetails.desc, 
                         uom: entry.uom || "-", 
@@ -1125,8 +1077,60 @@
 
         async function loadAdminData() {
             try {
+                // Fetch basic structure from CSV
                 const resAdmin = await fetchCSV(SHEET_MASTER_DATA);
-                adminData = resAdmin.data;
+                let tempData = resAdmin.data;
+
+                // Fetch Firebase overrides
+                let firestoreMaster = {};
+                try {
+                    const snapshot = await db.collection('inventory_master').get();
+                    snapshot.forEach(doc => {
+                        firestoreMaster[doc.id] = doc.data();
+                    });
+                } catch (e) { console.error("Firestore fetch error", e); }
+
+                // Merge Data for Admin View
+                const mergedAdminData = tempData.map(row => {
+                    const newRow = { ...row };
+                    
+                    // Find keys dynamically
+                    const itemNoKey = Object.keys(row).find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no')) || "";
+                    const itemNo = row[itemNoKey] ? cleanStr(row[itemNoKey]) : "";
+                    
+                    const weightKey = Object.keys(row).find(k => k.toLowerCase().includes('weight') || k.toLowerCase().includes('berat'));
+                    const weight = weightKey ? cleanNum(row[weightKey]) : 50;
+
+                    const capKey = Object.keys(row).find(k => k.toLowerCase().includes('capacity') || k.toLowerCase().includes('max'));
+                    const minKey = Object.keys(row).find(k => k.toLowerCase().includes('min') || k.toLowerCase().includes('minimum'));
+
+                    // Handle Max Cap (Keep as Units)
+                    if (capKey) {
+                        if (itemNo && firestoreMaster[itemNo] && firestoreMaster[itemNo].max_cap !== undefined) {
+                            newRow[capKey] = firestoreMaster[itemNo].max_cap;
+                        }
+                    }
+
+                    // Handle Min Stock (Convert to TON for display in Admin)
+                    if (minKey) {
+                        let valInTon = 0;
+                        if (itemNo && firestoreMaster[itemNo] && firestoreMaster[itemNo].min_stock !== undefined) {
+                            // If exists in Firebase, it's already in TONS
+                            valInTon = Number(firestoreMaster[itemNo].min_stock);
+                        } else {
+                            // If only in CSV, it's usually Units. Convert to Tons for consistent Admin View.
+                            // Ton = (Unit * Weight) / 1000
+                            const valInUnit = cleanNum(row[minKey]);
+                            valInTon = (valInUnit * weight) / 1000;
+                        }
+                        // Store as fixed decimal for display consistency
+                        newRow[minKey] = valInTon; 
+                    }
+                    
+                    return newRow;
+                });
+
+                adminData = mergedAdminData;
                 renderAdminTable(adminData);
             } catch (err) {
                 console.error("Gagal load admin data", err);
@@ -1134,64 +1138,52 @@
         }
 
         async function saveAdminData() {
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "") {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Konfigurasi Belum Lengkap',
-                    html: `Fitur ini membutuhkan <b>Google Apps Script</b>.<br>
-                           Silakan deploy script di Google Sheet Anda dan masukkan URL-nya ke dalam variabel <code>GOOGLE_SCRIPT_URL</code> di source code.`,
-                    confirmButtonText: 'Mengerti'
-                });
-                return;
-            }
-
-            const capInputs = document.querySelectorAll('.admin-capacity-input');
-            let updates = [];
-            
-            capInputs.forEach(capInput => {
-                const itemNo = capInput.dataset.itemNo;
-                const maxVal = capInput.value;
-                
-                // Find matching Min Stock input
-                const minInput = document.querySelector(`.admin-min-input[data-item-no="${itemNo}"]`);
-                const minVal = minInput ? minInput.value : "";
-
-                updates.push({
-                    itemNo: itemNo,
-                    maxCapacity: maxVal,
-                    minStock: minVal
-                });
-            });
+            if (!isAdminLoggedIn) return;
 
             Swal.fire({
                 title: 'Menyimpan Data...',
-                text: 'Mohon tunggu sebentar',
+                text: 'Menyimpan konfigurasi ke Firebase Cloud...',
                 allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                didOpen: () => { Swal.showLoading(); }
             });
 
             try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', 
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(updates)
+                const batch = db.batch();
+                let count = 0;
+                
+                // Select all min inputs
+                const minInputs = document.querySelectorAll('.admin-min-input');
+                
+                minInputs.forEach(input => {
+                    const itemNo = input.dataset.itemNo;
+                    if (!itemNo) return;
+
+                    const minVal = parseFloat(input.value); // Store TONS directly (float)
+                    // Find corresponding max cap input
+                    const capInput = document.querySelector(`.admin-capacity-input[data-item-no="${itemNo}"]`);
+                    const maxVal = capInput ? cleanNum(capInput.value) : 0;
+
+                    const ref = db.collection('inventory_master').doc(itemNo);
+                    batch.set(ref, { 
+                        min_stock: isNaN(minVal) ? 0 : minVal, 
+                        max_cap: maxVal,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp() 
+                    }, { merge: true });
+                    count++;
                 });
 
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Data Terkirim!',
-                    text: 'Perubahan sedang diproses oleh Google Sheet.',
-                    timer: 2000
-                });
+                if (count > 0) {
+                    await batch.commit();
+                    Swal.fire('Sukses', 'Data Min Stock (TON) & Kapasitas berhasil disimpan!', 'success');
+                    // Reload data to reflect changes in main dashboard
+                    loadData();
+                } else {
+                    Swal.fire('Info', 'Tidak ada data untuk disimpan.', 'info');
+                }
 
             } catch (error) {
                 console.error("Save error:", error);
-                Swal.fire('Error', 'Gagal menghubungi server.', 'error');
+                Swal.fire('Error', 'Gagal menyimpan ke Firebase: ' + error.message, 'error');
             }
         }
 
@@ -1245,9 +1237,6 @@
             } else if (activeTab === 'min-stock') {
                 const filteredData = currentData.filter(filterFn);
                 renderMinStockTable(filteredData); visibleCount = filteredData.length;
-            } else if (activeTab === 'abc') {
-                const filteredData = currentData.filter(filterFn);
-                renderABCTable(filteredData); visibleCount = filteredData.length;
             } else if (activeTab === 'admin') {
                 const filteredAdmin = adminData.filter(row => { const rowValues = Object.values(row).join(" ").toUpperCase(); return rowValues.indexOf(filterText) > -1; });
                 renderAdminTable(filteredAdmin); visibleCount = filteredAdmin.length;
@@ -1271,34 +1260,90 @@
             const mainData = data.filter(item => { const seg = item.segment ? item.segment.toUpperCase() : ""; return !seg.includes('GENERAL'); }); renderSection(mainData, 'tbody-inventory-main', 'tfoot-inventory-main');
             const generalData = data.filter(item => { const seg = item.segment ? item.segment.toUpperCase() : ""; return seg.includes('GENERAL'); }); renderSection(generalData, 'tbody-inventory-general', 'tfoot-inventory-general');
         }
+        
         function renderSpaceTable(data) {
              const renderTableSection = (tableData, tbodyId, tfootId, isStacking) => {
-                const tbody = document.getElementById(tbodyId); const tfoot = document.getElementById(tfootId); 
-                tbody.innerHTML = ''; tfoot.innerHTML = '';
+                const tbody = document.getElementById(tbodyId); const tfoot = document.getElementById(tfootId); tbody.innerHTML = ''; tfoot.innerHTML = '';
                 if (tableData.length === 0) { tbody.innerHTML = '<tr><td colspan="12" class="px-6 py-4 text-center text-gray-500 italic">Tidak ada data untuk kategori ini.</td></tr>'; return; }
                 let totalZak = 0, totalTon = 0, totalPallet = 0, totalMaxZak = 0, totalMaxTon = 0, totalMaxPallet = 0;
                 tableData.forEach((row) => {
                     const weight = row.weight || 50; const zak = row.qty_actual; const ton = (zak * weight) / 1000; const pallet = ton / 2; 
-                    let maxCapZak = 0; if (isStacking) maxCapZak = 56549; else maxCapZak = row.max_cap || 0;
-                    const maxCapTon = (maxCapZak * weight) / 1000; const maxCapPallet = maxCapTon / 2;
-                    let areaUsedPct = 0; if (maxCapZak > 0) areaUsedPct = (zak / maxCapZak) * 100;
-                    const displayAreaUsed = areaUsedPct > 100 ? 100 : areaUsedPct; const spaceAreaPct = 100 - displayAreaUsed;
-                    totalZak += zak; totalTon += ton; totalPallet += pallet; if (!isStacking) { totalMaxZak += maxCapZak; totalMaxTon += maxCapTon; totalMaxPallet += maxCapPallet; }
+                    
+                    let maxCapZak = 0;
+                    let maxCapTon = 0;
+                    let maxCapPallet = 0;
+
+                    if (isStacking) {
+                        maxCapZak = 56549; 
+                        maxCapTon = 2729; 
+                        maxCapPallet = 1364.5;
+                    } else {
+                        maxCapZak = row.max_cap || 0;
+                        maxCapTon = (maxCapZak * weight) / 1000;
+                        maxCapPallet = maxCapTon / 2;
+                    }
+                    
+                    let areaUsedPct = 0; 
+                    if (maxCapTon > 0) {
+                        // Calculate percentage based on TON as requested
+                        areaUsedPct = (ton / maxCapTon) * 100;
+                    }
+                    
+                    const displayAreaUsed = areaUsedPct > 100 ? 100 : areaUsedPct; 
+                    const spaceAreaPct = 100 - displayAreaUsed;
+                    
+                    totalZak += zak; totalTon += ton; totalPallet += pallet; 
+                    
+                    if (!isStacking) { 
+                        totalMaxZak += maxCapZak; 
+                        totalMaxTon += maxCapTon; 
+                        totalMaxPallet += maxCapPallet; 
+                    }
+                    
                     const tr = document.createElement('tr'); tr.className = 'bg-white hover:bg-gray-50 transition-colors'; 
                     tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 border-r border-gray-100 text-center">${row.item_no}</td><td class="px-4 py-3 text-sm text-gray-700 border-r border-gray-100 max-w-xs truncate" title="${row.desc}">${row.desc}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-gray-600 border-r border-gray-100">${row.segment}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-100">${weight}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${zak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${ton.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${pallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600 bg-gray-50 border-r border-gray-200 font-semibold">${maxCapZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 bg-gray-50 border-r border-gray-200">${maxCapTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 bg-gray-50 border-r border-gray-200">${maxCapPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold ${areaUsedPct > 90 ? 'text-red-600' : 'text-blue-600'} border-r border-gray-100">${areaUsedPct.toFixed(1)}%</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold ${spaceAreaPct < 10 ? 'text-red-600' : 'text-green-600'} border-r border-gray-100">${spaceAreaPct.toFixed(1)}%</td>`;
                     tbody.appendChild(tr);
                 });
-                let footerMaxZak = 0; let footerMaxTon = 0; let footerMaxPallet = 0;
-                if (isStacking) { footerMaxZak = 56549; } else { footerMaxZak = totalMaxZak; footerMaxTon = totalMaxTon; footerMaxPallet = totalMaxPallet; }
-                let footerAreaUsedPct = 0; if (footerMaxZak > 0) footerAreaUsedPct = (totalZak / footerMaxZak) * 100;
-                const footerDisplayAreaUsed = footerAreaUsedPct > 100 ? 100 : footerAreaUsedPct; const footerSpaceAreaPct = 100 - footerDisplayAreaUsed;
-                tfoot.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-right text-gray-800 font-extrabold text-sm">TOTAL</td><td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${footerMaxZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${isStacking ? '-' : footerMaxTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${isStacking ? '-' : footerMaxPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 text-center font-extrabold text-sm bg-gray-100 border-l border-gray-300 ${footerAreaUsedPct > 90 ? 'text-red-700' : 'text-blue-700'}">${footerAreaUsedPct.toFixed(1)}%</td><td class="px-4 py-3 text-center font-extrabold text-sm bg-gray-100 border-l border-gray-300 ${footerSpaceAreaPct < 10 ? 'text-red-700' : 'text-green-700'}">${footerSpaceAreaPct.toFixed(1)}%</td></tr>`;
+                
+                let footerMaxZak = 0; 
+                let footerMaxTon = 0; 
+                let footerMaxPallet = 0;
+                
+                if (isStacking) { 
+                    footerMaxZak = 56549; 
+                    footerMaxTon = 2729; 
+                    footerMaxPallet = 1364.5; 
+                } else { 
+                    footerMaxZak = totalMaxZak; 
+                    footerMaxTon = totalMaxTon; 
+                    footerMaxPallet = totalMaxPallet; 
+                }
+                
+                // Footer percentage based on TON
+                let footerAreaUsedPct = 0; 
+                if (footerMaxTon > 0) {
+                    footerAreaUsedPct = (totalTon / footerMaxTon) * 100;
+                }
+                
+                const footerDisplayAreaUsed = footerAreaUsedPct > 100 ? 100 : footerAreaUsedPct; 
+                const footerSpaceAreaPct = 100 - footerDisplayAreaUsed;
+                
+                tfoot.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-right text-gray-800 font-extrabold text-sm">TOTAL</td>
+                <td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalZak.toLocaleString('id-ID')}</td>
+                <td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td>
+                <td class="px-4 py-3 text-right text-blue-900 font-extrabold text-sm bg-blue-100 border-l border-gray-300">${totalPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td>
+                <td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${footerMaxZak.toLocaleString('id-ID')}</td>
+                
+                <td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${footerMaxTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td>
+                
+                <td class="px-4 py-3 text-right text-gray-800 font-extrabold text-sm bg-gray-200 border-l border-gray-300">${footerMaxPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td>
+                
+                <td class="px-4 py-3 text-center font-extrabold text-sm bg-gray-100 border-l border-gray-300 ${footerAreaUsedPct > 90 ? 'text-red-700' : 'text-blue-700'}">${footerAreaUsedPct.toFixed(1)}%</td><td class="px-4 py-3 text-center font-extrabold text-sm bg-gray-100 border-l border-gray-300 ${footerSpaceAreaPct < 10 ? 'text-red-700' : 'text-green-700'}">${footerSpaceAreaPct.toFixed(1)}%</td></tr>`;
             };
             const stackingData = data.filter(item => { const seg = item.segment.toUpperCase(); return !seg.includes('GENERAL'); }); renderTableSection(stackingData, 'tbody-space-stacking', 'tfoot-space-stacking', true); 
             const rackData = data.filter(item => item.segment.toUpperCase().includes('GENERAL')); renderTableSection(rackData, 'tbody-space-rack', 'tfoot-space-rack', false); 
         }
 
-        // --- RENDER MIN STOCK TABLE ---
         function renderMinStockTable(data) {
              const renderTableSection = (tableData, tbodyId) => {
                 const tbody = document.getElementById(tbodyId); 
@@ -1317,7 +1362,7 @@
 
                     const tr = document.createElement('tr'); 
                     tr.className = rowClass + ' transition-colors'; 
-                    tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700 border-r border-gray-200 text-center">${row.item_no}</td><td class="px-4 py-3 text-sm text-gray-700 border-r border-gray-200 max-w-xs truncate" title="${row.desc}">${row.desc}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-gray-600 border-r border-gray-200">${row.segment}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-200">${weight}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${actZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${actTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${actPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-800 bg-red-50 border-r border-gray-200 font-semibold">${minZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-800 bg-red-50 border-r border-gray-200">${minTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-800 bg-red-50 border-r border-gray-200">${minPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold ${variance < 0 ? 'text-red-600' : 'text-green-600'} border-r border-gray-200">${variance.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold border-r border-gray-200"><span class="px-2 py-1 rounded ${statusClass}">${statusText}</span></td>`;
+                    tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700 border-r border-gray-200 text-center">${row.item_no}</td><td class="px-4 py-3 text-sm text-gray-700 border-r border-gray-200 max-w-xs truncate" title="${row.desc}">${row.desc}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-gray-600 border-r border-gray-200">${row.segment}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-200">${weight}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${actZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${actTon.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-blue-800 bg-blue-50 border-r border-gray-200">${actPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-800 bg-red-50 border-r border-gray-200 font-semibold">${minZak.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-800 bg-red-50 border-r border-gray-200">${minTon.toLocaleString('id-ID', {maximumFractionDigits: 2})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-800 bg-red-50 border-r border-gray-200">${minPallet.toLocaleString('id-ID', {maximumFractionDigits: 0})}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold ${variance < 0 ? 'text-red-600' : 'text-green-600'} border-r border-gray-200">${variance.toLocaleString('id-ID')}</td><td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold border-r border-gray-200"><span class="px-2 py-1 rounded ${statusClass}">${statusText}</span></td>`;
                     tbody.appendChild(tr);
                 });
             };
@@ -1325,77 +1370,39 @@
             const rackData = data.filter(item => item.segment.toUpperCase().includes('GENERAL')); renderTableSection(rackData, 'tbody-min-stock-rack'); 
         }
 
-        // --- NEW: RENDER ABC TABLE ---
-        function renderABCTable(data) {
-            // Sort data by qty_output descending
-            const sortedData = [...data].sort((a, b) => b.qty_output - a.qty_output);
-            
-            // Calculate total output
-            const totalOutput = sortedData.reduce((acc, curr) => acc + curr.qty_output, 0);
-            
-            const tbody = document.getElementById('tbody-abc');
-            tbody.innerHTML = '';
-            
-            if (sortedData.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500 italic">Tidak ada data untuk analisis.</td></tr>'; return; }
-
-            let cumulative = 0;
-            let countA = 0, countB = 0, countC = 0;
-
-            sortedData.forEach((row, index) => {
-                const qty = row.qty_output;
-                const pct = totalOutput > 0 ? (qty / totalOutput) * 100 : 0;
-                cumulative += qty;
-                const cumPct = totalOutput > 0 ? (cumulative / totalOutput) * 100 : 0;
-                
-                let abcClass = "C";
-                let classColor = "text-gray-600 bg-gray-100";
-                
-                if (cumPct <= 80) { abcClass = "A"; classColor = "text-green-700 bg-green-100"; countA++; }
-                else if (cumPct <= 95) { abcClass = "B"; classColor = "text-blue-700 bg-blue-100"; countB++; }
-                else { countC++; }
-
-                const tr = document.createElement('tr');
-                tr.className = 'bg-white hover:bg-gray-50 transition-colors';
-                tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-500 border-r border-gray-100">${index + 1}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-center text-sm border-r border-gray-100"><span class="px-2 py-1 rounded font-bold ${classColor}">${abcClass}</span></td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700 border-r border-gray-100 text-center">${row.item_no}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700 border-r border-gray-100 max-w-xs truncate" title="${row.desc}">${row.desc}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-gray-600 border-r border-gray-100">${row.segment}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-blue-800 bg-blue-50 border-r border-gray-100">${qty.toLocaleString('id-ID')}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600 border-r border-gray-100">${pct.toFixed(2)}%</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-gray-800 border-r border-gray-100">${cumPct.toFixed(2)}%</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Update Summary Cards
-            document.getElementById('abc-count-a').innerText = countA;
-            document.getElementById('abc-count-b').innerText = countB;
-            document.getElementById('abc-count-c').innerText = countC;
-        }
-
         function renderAdminTable(data) {
             const theadRow = document.getElementById('thead-admin-row'); const tbody = document.getElementById('tbody-admin'); theadRow.innerHTML = ''; tbody.innerHTML = '';
             if (data.length === 0) { tbody.innerHTML = '<tr><td class="px-6 py-4 text-center text-gray-500">Tidak ada data master ditemukan.</td></tr>'; return; }
             const headers = Object.keys(data[0]); headers.unshift("No"); 
             if (!headers.includes("Edit Max Cap")) headers.push("Edit Max Cap");
-            if (!headers.includes("Edit Min Stock")) headers.push("Edit Min Stock");
+            if (!headers.includes("Edit Min Stock (TON)")) headers.push("Edit Min Stock (TON)");
             headers.forEach(header => { const th = document.createElement('th'); th.className = "px-6 py-4 text-left text-xs font-extrabold text-slate-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200"; th.innerText = header; theadRow.appendChild(th); });
             data.forEach((row, index) => {
                 const tr = document.createElement('tr'); tr.className = index % 2 === 0 ? 'bg-white hover:bg-gray-50 transition-colors' : 'bg-gray-50 hover:bg-gray-100 transition-colors';
                 const tdNo = document.createElement('td'); tdNo.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-500 border-r border-gray-100"; tdNo.innerText = index + 1; tr.appendChild(tdNo);
-                Object.values(row).forEach(val => { const td = document.createElement('td'); td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100"; td.innerText = val; tr.appendChild(td); });
+                
+                // Render CSV columns first (excluding input columns if they exist in CSV for some reason)
+                Object.entries(row).forEach(([key, val]) => { 
+                    if (key !== 'Edit Max Cap' && key !== 'Edit Min Stock (TON)' && key !== 'Min Stock' && key !== 'Minimum Stock') {
+                        const td = document.createElement('td'); td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100"; td.innerText = val; tr.appendChild(td); 
+                    }
+                });
+
                 const itemNoKey = Object.keys(row).find(k => k.toLowerCase().includes('item') || k.toLowerCase().includes('no')) || ""; const itemNo = row[itemNoKey] || `ROW-${index}`;
+                
+                // Max Cap Input
                 const tdCapInput = document.createElement('td'); tdCapInput.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100";
                 const existingCap = row['Max Capacity'] || row['Capacity'] || ""; 
                 tdCapInput.innerHTML = `<input type="number" class="admin-capacity-input w-full border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" value="${existingCap}" data-item-no="${itemNo}">`;
                 tr.appendChild(tdCapInput);
+                
+                // Min Stock Input (TON)
                 const tdMinInput = document.createElement('td'); tdMinInput.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-r border-gray-100";
                 const minKey = Object.keys(row).find(k => k.toLowerCase().includes('min') || k.toLowerCase().includes('minimum'));
                 const existingMin = minKey ? row[minKey] : "";
-                tdMinInput.innerHTML = `<input type="number" class="admin-min-input w-full border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" value="${existingMin}" data-item-no="${itemNo}">`;
+                tdMinInput.innerHTML = `<input type="number" step="0.01" class="admin-min-input w-full border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00" value="${existingMin}" data-item-no="${itemNo}">`;
                 tr.appendChild(tdMinInput);
+                
                 tbody.appendChild(tr);
             });
         }
@@ -1418,6 +1425,7 @@
                  ws = XLSX.utils.aoa_to_sheet(ws_data); ws['!cols'] = [{wch:5}, {wch:15}, {wch:20}, {wch:40}, {wch:8}, {wch:15}, {wch:12}, {wch:12}, {wch:12}];
              
              } else if (activeTab === 'space') {
+                 // Simplified export logic for brevity - same as original
                  fileNamePrefix = "Actual_Vs_Space"; ws = XLSX.utils.aoa_to_sheet([]); const ws_data = []; const merges = [];
                  function addSpaceSection(title, data, isStacking, startRow) {
                      const unitLabel = isStacking ? "ZAK" : "PAC";
@@ -1429,12 +1437,20 @@
                      data.forEach(row => {
                          const weight = row.weight || 50; const zak = row.qty_actual; const ton = (zak * weight) / 1000; const pallet = ton / 2;
                          let mcZak = isStacking ? 56549 : (row.max_cap || 0); let mcTon = (mcZak * weight) / 1000; let mcPal = mcTon / 2;
-                         let areaPct = mcZak > 0 ? (zak/mcZak)*100 : 0; let spacePct = 100 - (areaPct > 100 ? 100 : areaPct);
+                         
+                         let maxCapTon = 0;
+                         if (isStacking) {
+                             maxCapTon = 2729; 
+                         } else {
+                             maxCapTon = (row.max_cap * weight) / 1000;
+                         }
+
+                         let areaPct = maxCapTon > 0 ? (ton/maxCapTon)*100 : 0; let spacePct = 100 - (areaPct > 100 ? 100 : areaPct);
                          tZak+=zak; tTon+=ton; tPal+=pallet; if(!isStacking) { tmZak+=mcZak; tmTon+=mcTon; tmPal+=mcPal; }
                          ws_data.push([row.item_no, row.desc, row.segment, weight, zak, ton, pallet, mcZak, mcTon, mcPal, areaPct.toFixed(1)+"%", spacePct.toFixed(1)+"%"]);
                      });
-                     let fZak = isStacking ? 56549 : tmZak; let fTon = isStacking ? "-" : tmTon; let fPal = isStacking ? "-" : tmPal;
-                     let fArea = fZak > 0 ? (tZak/fZak)*100 : 0; let fSpace = 100 - (fArea > 100 ? 100 : fArea);
+                     let fZak = isStacking ? 56549 : tmZak; let fTon = isStacking ? 2729 : tmTon; let fPal = isStacking ? 1364.5 : tmPal;
+                     let fArea = fTon > 0 ? (tTon/fTon)*100 : 0; let fSpace = 100 - (fArea > 100 ? 100 : fArea);
                      ws_data.push(["TOTAL", "", "", "", tZak, tTon, tPal, fZak, fTon, fPal, fArea.toFixed(1)+"%", fSpace.toFixed(1)+"%"]); ws_data.push([]);
                  }
                  const stackingData = dataToExport.filter(i => !i.segment.toUpperCase().includes('GENERAL')); addSpaceSection("STORAGE : PALLET POSITION / STACKING", stackingData, true, 0);
@@ -1449,7 +1465,6 @@
                      ws_data.push(["Item Code", "Desc", "Segment", "Weight", "Current Stock (Actual)", "", "", "Minimum Stock Threshold", "", "", "Variance", "Status"]);
                      ws_data.push(["", "", "", "", unitLabel, "Ton", "PALLET", unitLabel, "Ton", "PALLET", "", ""]);
                      const r1 = startRow + 1; merges.push({s:{r:r1,c:0}, e:{r:r1+1,c:0}}); merges.push({s:{r:r1,c:1}, e:{r:r1+1,c:1}}); merges.push({s:{r:r1,c:2}, e:{r:r1+1,c:2}}); merges.push({s:{r:r1,c:3}, e:{r:r1+1,c:3}}); merges.push({s:{r:r1,c:4}, e:{r:r1,c:6}}); merges.push({s:{r:r1,c:7}, e:{r:r1,c:9}}); merges.push({s:{r:r1,c:10}, e:{r:r1+1,c:10}}); merges.push({s:{r:r1,c:11}, e:{r:r1+1,c:11}});
-                     
                      data.forEach(row => {
                          const weight = row.weight || 50; 
                          const actZak = row.qty_actual; const actTon = (actZak * weight) / 1000; const actPallet = actTon / 2;
@@ -1464,25 +1479,6 @@
                  const rackData = dataToExport.filter(i => i.segment.toUpperCase().includes('GENERAL')); addMinStockSection("MIN STOCK : GENERAL", rackData, false, ws_data.length);
                  ws = XLSX.utils.aoa_to_sheet(ws_data); ws['!merges'] = merges; ws['!cols'] = [{wch:15}, {wch:40}, {wch:15}, {wch:8}, {wch:12}, {wch:12}, {wch:10}, {wch:12}, {wch:12}, {wch:10}, {wch:15}, {wch:15}];
 
-             } else if (activeTab === 'abc') {
-                 fileNamePrefix = "ABC_Analysis"; ws = XLSX.utils.aoa_to_sheet([]);
-                 const ws_data = [["Rank", "Class", "Item No", "Description", "Segment", "Output Qty", "% Contrib", "Cumulative %"]];
-                 
-                 const sortedData = [...dataToExport].sort((a, b) => b.qty_output - a.qty_output);
-                 const totalOutput = sortedData.reduce((acc, curr) => acc + curr.qty_output, 0);
-                 let cumulative = 0;
-
-                 sortedData.forEach((row, index) => {
-                    const qty = row.qty_output;
-                    const pct = totalOutput > 0 ? (qty / totalOutput) * 100 : 0;
-                    cumulative += qty;
-                    const cumPct = totalOutput > 0 ? (cumulative / totalOutput) * 100 : 0;
-                    let abcClass = "C";
-                    if (cumPct <= 80) abcClass = "A"; else if (cumPct <= 95) abcClass = "B";
-                    ws_data.push([index + 1, abcClass, row.item_no, row.desc, row.segment, qty, pct.toFixed(2)+"%", cumPct.toFixed(2)+"%"]);
-                 });
-                 ws = XLSX.utils.aoa_to_sheet(ws_data); ws['!cols'] = [{wch:5}, {wch:5}, {wch:15}, {wch:40}, {wch:15}, {wch:12}, {wch:10}, {wch:12}];
-
              } else if (activeTab === 'admin') {
                  fileNamePrefix = "Master_Data_Admin"; const headers = Object.keys(adminData[0]); const ws_data = [headers]; adminData.forEach(row => ws_data.push(Object.values(row))); ws = XLSX.utils.aoa_to_sheet(ws_data);
              }
@@ -1493,8 +1489,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
-            loadWhatsAppConfig(); // Load config immediately
-            // setInterval(loadData, REFRESH_INTERVAL); // Removed per user request
+            loadWhatsAppConfig(); 
         });
     </script>
 </body>
