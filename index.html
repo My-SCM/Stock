@@ -2,23 +2,307 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Lost - System Error</title>
+    
+    <style>
+        /* Mengatur dasar halaman agar sesuai dengan tema hacker */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000; /* Latar belakang hitam pekat */
+            color: #0f0; /* Warna teks hijau neon khas terminal lama */
+            font-family: 'Courier New', Courier, monospace; /* Font monospace untuk kesan kode */
+            overflow: hidden; /* Mencegah scroll bar muncul akibat animasi background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-    <!-- Redirect -->
-    <meta http-equiv="refresh" content="0; url=https://fg-logistics.github.io/Stock-Monitoring/">
+        /* Container untuk efek hujan kode (Matrix effect) */
+        #matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Pastikan di belakang konten utama */
+        }
 
-    <!-- SEO -->
-    <link rel="canonical" href="https://fg-logistics.github.io/Stock-Monitoring/">
+        /* Container utama untuk pesan error */
+        .content-container {
+            position: relative;
+            z-index: 1; /* Tampil di atas background animasi */
+            background-color: rgba(0, 0, 0, 0.85); /* Latar belakang semi transparan agar teks mudah dibaca */
+            padding: 40px;
+            border: 2px solid #0f0;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.5); /* Efek cahaya (glow) hijau */
+            max-width: 90%;
+            width: 600px;
+            backdrop-filter: blur(4px); /* Menambah efek blur pada background di belakang container */
+        }
 
-    <script>
-        window.location.replace("https://fg-logistics.github.io/Stock-Monitoring/");
-    </script>
+        /* Gaya untuk ikon peringatan */
+        .warning-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: blink 2s infinite; /* Efek berkedip */
+            text-shadow: 0 0 10px #0f0;
+        }
+
+        /* Gaya untuk teks peringatan utama */
+        .title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .title .zh-text {
+            font-size: 24px;
+            display: block;
+            margin-top: 5px;
+            font-weight: normal;
+        }
+
+        /* Gaya untuk deskripsi pesan */
+        .message {
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .message .zh-text {
+            display: block;
+            margin-top: 10px;
+            color: #ccc; /* Sedikit lebih redup untuk hirarki visual */
+        }
+
+        /* Gaya untuk detail sistem (opsional, untuk kesan teknis) */
+        .system-details {
+            font-size: 14px;
+            text-align: left;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-left: 4px solid #0f0;
+            background-color: rgba(0, 255, 0, 0.05);
+            font-family: 'Consolas', monospace;
+        }
+
+        .system-details p {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Gaya untuk tombol coba lagi */
+        .retry-btn {
+            background-color: rgba(0, 255, 0, 0.1);
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            letter-spacing: 1px;
+        }
+
+        .retry-btn .zh-text {
+            display: block;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Efek hover pada tombol */
+        .retry-btn:hover {
+            background-color: #0f0;
+            color: #000;
+            box-shadow: 0 0 20px #0f0;
+            font-weight: bold;
+        }
+        
+        .retry-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Animasi berkedip untuk ikon */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Responsif untuk layar kecil */
+        @media (max-width: 600px) {
+            .content-container {
+                padding: 25px 15px;
+            }
+            .title {
+                font-size: 24px;
+            }
+            .title .zh-text {
+                font-size: 18px;
+            }
+            .message {
+                font-size: 14px;
+            }
+            .warning-icon {
+                font-size: 48px;
+            }
+            .system-details {
+                font-size: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <p>Redirecting...
-        <a href="https://fg-logistics.github.io/Stock-Monitoring/">
-            Klik di sini jika tidak otomatis.
-        </a>
-    </p>
+
+    <!-- Canvas untuk latar belakang Matrix -->
+    <canvas id="matrix-bg"></canvas>
+
+    <!-- Konten utama pesan disconnected -->
+    <div class="content-container">
+        <div class="warning-icon">⚠</div>
+        <div class="title">
+            CONNECTION LOST
+            <span class="zh-text">连接丢失</span>
+        </div>
+        
+        <div class="message" id="status-message">
+            Connection to the main server has been severed. The system cannot receive or transmit data packets. Please verify your network uplink or attempt manual reconnection.
+            <span class="zh-text">与主服务器的连接已断开。系统无法接收或发送数据包。请验证您的网络上行链路或尝试手动重新连接。</span>
+        </div>
+        
+        <!-- Detail teknis fiktif untuk menambah kesan hacker -->
+        <div class="system-details">
+            <p><span>> ERROR_CODE:</span> <span>0x80072EFD</span></p>
+            <p><span>> STATUS:</span> <span>OFFLINE / 离线</span></p>
+            <p><span>> LAST_PING:</span> <span>TIMEOUT / 超时</span></p>
+            <p><span>> SECURE_TUNNEL:</span> <span>COMPROMISED / 受损</span></p>
+        </div>
+
+        <button class="retry-btn" onclick="retryConnection()" id="reconnect-btn">
+            INITIATE RECONNECT SEQUENCE
+            <span class="zh-text">启动重新连接序列</span>
+        </button>
+    </div>
+
+    <script>
+        // --- Bagian 1: Efek Background Matrix ---
+        
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+
+        // Fungsi untuk mengatur ukuran canvas agar memenuhi layar
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        // Panggil saat pertama kali dimuat dan saat layar diubah ukurannya
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Kumpulan karakter (campuran Katakana, Latin, dan Angka)
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=~[]{}|;:,.<>?/アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
+        
+        const fontSize = 16;
+        let columns;
+        let drops = [];
+
+        // Fungsi inisialisasi kolom dan tetesan (drops)
+        function initMatrix() {
+            columns = Math.floor(canvas.width / fontSize); 
+            drops = [];
+            for (let x = 0; x < columns; x++) {
+                // Mulai dari posisi Y acak agar terlihat lebih natural saat awal load
+                drops[x] = Math.random() * -100; 
+            }
+        }
+
+        initMatrix(); 
+        window.addEventListener('resize', initMatrix);
+
+        // Fungsi utama untuk menggambar efek hujan kode
+        function drawMatrix() {
+            // Gambar persegi panjang hitam semi transparan untuk efek "jejak"
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Set warna dan font
+            ctx.fillStyle = '#0F0'; 
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                // Pilih karakter acak
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                
+                const x = i * fontSize;
+                const y = drops[i] * fontSize;
+
+                // Jangan gambar jika posisi Y masih negatif (untuk efek delay awal)
+                if(y >= 0) {
+                    ctx.fillText(text, x, y);
+                }
+
+                // Reset tetesan ke atas setelah melewati tinggi layar
+                if (y > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                // Turunkan posisi Y
+                drops[i]++;
+            }
+            
+            // Loop animasi
+            setTimeout(() => {
+                requestAnimationFrame(drawMatrix);
+            }, 35); // Kecepatan jatuhnya kode (semakin besar semakin lambat)
+        }
+
+        drawMatrix();
+
+        // --- Bagian 2: Logika Interaksi Tombol ---
+
+        // Fungsi simulasi saat tombol "Reconnect" ditekan
+        function retryConnection() {
+            const btn = document.getElementById('reconnect-btn');
+            const messageDiv = document.getElementById('status-message');
+            
+            // Simpan pesan asli
+            const originalMessage = messageDiv.innerHTML;
+            
+            // Ubah state tombol
+            btn.innerHTML = 'ESTABLISHING CONNECTION...<br><span class="zh-text">正在建立连接...</span>';
+            btn.style.backgroundColor = '#0f0';
+            btn.style.color = '#000';
+            btn.disabled = true;
+
+            // Simulasi proses loading (2 detik)
+            setTimeout(() => {
+                // Simulasi gagal koneksi
+                messageDiv.innerHTML = '<span style="color: #ff3333; font-weight: bold;">>> FATAL ERROR: TARGET HOST UNREACHABLE. RETRY SEQUENCE ABORTED. <<<br><span class="zh-text" style="color: #ff3333;">>> 致命错误：目标主机不可达。重试序列已中止。 <<</span></span>';
+                
+                // Kembalikan ke keadaan semula setelah 3.5 detik
+                setTimeout(() => {
+                    btn.innerHTML = 'INITIATE RECONNECT SEQUENCE<br><span class="zh-text">启动重新连接序列</span>';
+                    btn.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+                    btn.style.color = '#0f0';
+                    btn.disabled = false;
+                    messageDiv.innerHTML = originalMessage;
+                }, 3500);
+
+            }, 2000); 
+        }
+    </script>
 </body>
 </html>
