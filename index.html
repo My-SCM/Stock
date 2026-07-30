@@ -1,307 +1,1453 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connection Lost - System Error</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Logistics Monitoring System (LMS) | Enterprise Logistics Dashboard</title>
     
-    <style>
-        /* Mengatur dasar halaman agar sesuai dengan tema hacker */
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #000; /* Latar belakang hitam pekat */
-            color: #0f0; /* Warna teks hijau neon khas terminal lama */
-            font-family: 'Courier New', Courier, monospace; /* Font monospace untuk kesan kode */
-            overflow: hidden; /* Mencegah scroll bar muncul akibat animasi background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        /* Container untuk efek hujan kode (Matrix effect) */
-        #matrix-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0; /* Pastikan di belakang konten utama */
-        }
-
-        /* Container utama untuk pesan error */
-        .content-container {
-            position: relative;
-            z-index: 1; /* Tampil di atas background animasi */
-            background-color: rgba(0, 0, 0, 0.85); /* Latar belakang semi transparan agar teks mudah dibaca */
-            padding: 40px;
-            border: 2px solid #0f0;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.5); /* Efek cahaya (glow) hijau */
-            max-width: 90%;
-            width: 600px;
-            backdrop-filter: blur(4px); /* Menambah efek blur pada background di belakang container */
-        }
-
-        /* Gaya untuk ikon peringatan */
-        .warning-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            animation: blink 2s infinite; /* Efek berkedip */
-            text-shadow: 0 0 10px #0f0;
-        }
-
-        /* Gaya untuk teks peringatan utama */
-        .title {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .title .zh-text {
-            font-size: 24px;
-            display: block;
-            margin-top: 5px;
-            font-weight: normal;
-        }
-
-        /* Gaya untuk deskripsi pesan */
-        .message {
-            font-size: 16px;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .message .zh-text {
-            display: block;
-            margin-top: 10px;
-            color: #ccc; /* Sedikit lebih redup untuk hirarki visual */
-        }
-
-        /* Gaya untuk detail sistem (opsional, untuk kesan teknis) */
-        .system-details {
-            font-size: 14px;
-            text-align: left;
-            margin-bottom: 30px;
-            padding: 15px;
-            border-left: 4px solid #0f0;
-            background-color: rgba(0, 255, 0, 0.05);
-            font-family: 'Consolas', monospace;
-        }
-
-        .system-details p {
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* Gaya untuk tombol coba lagi */
-        .retry-btn {
-            background-color: rgba(0, 255, 0, 0.1);
-            color: #0f0;
-            border: 1px solid #0f0;
-            padding: 15px 30px;
-            font-size: 18px;
-            font-family: inherit;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            letter-spacing: 1px;
-        }
-
-        .retry-btn .zh-text {
-            display: block;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        /* Efek hover pada tombol */
-        .retry-btn:hover {
-            background-color: #0f0;
-            color: #000;
-            box-shadow: 0 0 20px #0f0;
-            font-weight: bold;
-        }
-        
-        .retry-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Animasi berkedip untuk ikon */
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        /* Responsif untuk layar kecil */
-        @media (max-width: 600px) {
-            .content-container {
-                padding: 25px 15px;
-            }
-            .title {
-                font-size: 24px;
-            }
-            .title .zh-text {
-                font-size: 18px;
-            }
-            .message {
-                font-size: 14px;
-            }
-            .warning-icon {
-                font-size: 48px;
-            }
-            .system-details {
-                font-size: 12px;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Canvas untuk latar belakang Matrix -->
-    <canvas id="matrix-bg"></canvas>
-
-    <!-- Konten utama pesan disconnected -->
-    <div class="content-container">
-        <div class="warning-icon">⚠</div>
-        <div class="title">
-            CONNECTION LOST
-            <span class="zh-text">连接丢失</span>
-        </div>
-        
-        <div class="message" id="status-message">
-            Connection to the main server has been severed. The system cannot receive or transmit data packets. Please verify your network uplink or attempt manual reconnection.
-            <span class="zh-text">与主服务器的连接已断开。系统无法接收或发送数据包。请验证您的网络上行链路或尝试手动重新连接。</span>
-        </div>
-        
-        <!-- Detail teknis fiktif untuk menambah kesan hacker -->
-        <div class="system-details">
-            <p><span>> ERROR_CODE:</span> <span>0x80072EFD</span></p>
-            <p><span>> STATUS:</span> <span>OFFLINE / 离线</span></p>
-            <p><span>> LAST_PING:</span> <span>TIMEOUT / 超时</span></p>
-            <p><span>> SECURE_TUNNEL:</span> <span>COMPROMISED / 受损</span></p>
-        </div>
-
-        <button class="retry-btn" onclick="retryConnection()" id="reconnect-btn">
-            INITIATE RECONNECT SEQUENCE
-            <span class="zh-text">启动重新连接序列</span>
-        </button>
-    </div>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
     <script>
-        // --- Bagian 1: Efek Background Matrix ---
-        
-        const canvas = document.getElementById('matrix-bg');
-        const ctx = canvas.getContext('2d');
-
-        // Fungsi untuk mengatur ukuran canvas agar memenuhi layar
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        // Panggil saat pertama kali dimuat dan saat layar diubah ukurannya
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        // Kumpulan karakter (campuran Katakana, Latin, dan Angka)
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=~[]{}|;:,.<>?/アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレゲゼデベペオォコソトノホモヨョロゴゾドボポヴッン';
-        
-        const fontSize = 16;
-        let columns;
-        let drops = [];
-
-        // Fungsi inisialisasi kolom dan tetesan (drops)
-        function initMatrix() {
-            columns = Math.floor(canvas.width / fontSize); 
-            drops = [];
-            for (let x = 0; x < columns; x++) {
-                // Mulai dari posisi Y acak agar terlihat lebih natural saat awal load
-                drops[x] = Math.random() * -100; 
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        bgPrimary: '#070B14',
+                        bgSecondary: '#0E1628',
+                        bgCard: '#111C33',
+                        accentCyan: '#00E5FF',
+                        accentPurple: '#6D5DF6',
+                        statusSuccess: '#00D084',
+                        statusWarning: '#FFB800',
+                        statusDanger: '#FF4D6D',
+                        textPrimary: '#FFFFFF',
+                        textSecondary: '#B8C0D9',
+                        borderMain: 'rgba(255,255,255,0.08)',
+                    },
+                    boxShadow: {
+                        'glow-cyan': '0 0 25px rgba(0, 229, 255, 0.2)',
+                        'glow-purple': '0 0 25px rgba(109, 93, 246, 0.2)',
+                        'glow-green': '0 0 25px rgba(0, 208, 132, 0.2)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.45)',
+                    }
+                }
             }
         }
+    </script>
 
-        initMatrix(); 
-        window.addEventListener('resize', initMatrix);
+    <style>
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        @media (min-width: 768px) {
+            ::-webkit-scrollbar { width: 6px; height: 6px; }
+        }
+        ::-webkit-scrollbar-track { background: #070B14; }
+        ::-webkit-scrollbar-thumb { background: #1C2B4A; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00E5FF; }
 
-        // Fungsi utama untuk menggambar efek hujan kode
-        function drawMatrix() {
-            // Gambar persegi panjang hitam semi transparan untuk efek "jejak"
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Set warna dan font
-            ctx.fillStyle = '#0F0'; 
-            ctx.font = fontSize + 'px monospace';
-
-            for (let i = 0; i < drops.length; i++) {
-                // Pilih karakter acak
-                const text = characters.charAt(Math.floor(Math.random() * characters.length));
-                
-                const x = i * fontSize;
-                const y = drops[i] * fontSize;
-
-                // Jangan gambar jika posisi Y masih negatif (untuk efek delay awal)
-                if(y >= 0) {
-                    ctx.fillText(text, x, y);
-                }
-
-                // Reset tetesan ke atas setelah melewati tinggi layar
-                if (y > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-
-                // Turunkan posisi Y
-                drops[i]++;
-            }
-            
-            // Loop animasi
-            setTimeout(() => {
-                requestAnimationFrame(drawMatrix);
-            }, 35); // Kecepatan jatuhnya kode (semakin besar semakin lambat)
+        body {
+            background-color: #070B14;
+            color: #FFFFFF;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
         }
 
-        drawMatrix();
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(17, 28, 51, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
 
-        // --- Bagian 2: Logika Interaksi Tombol ---
+        .glass-header {
+            background: rgba(7, 11, 20, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
 
-        // Fungsi simulasi saat tombol "Reconnect" ditekan
-        function retryConnection() {
-            const btn = document.getElementById('reconnect-btn');
-            const messageDiv = document.getElementById('status-message');
+        /* Glowing Gradient Cards */
+        .neon-card {
+            position: relative;
+            background: #111C33;
+            border-radius: 20px;
+            z-index: 1;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .neon-card::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            border-radius: 21px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.01));
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+        .neon-card:hover::before {
+            background: linear-gradient(135deg, #00E5FF, #6D5DF6);
+        }
+
+        .cyan-top::before { background: linear-gradient(180deg, #00E5FF 0%, rgba(0,229,255,0.02) 60%); }
+        .purple-top::before { background: linear-gradient(180deg, #6D5DF6 0%, rgba(109,93,246,0.02) 60%); }
+        .green-top::before { background: linear-gradient(180deg, #00D084 0%, rgba(0,208,132,0.02) 60%); }
+
+        /* Smooth Table Hover */
+        .table-row-hover:hover {
+            background: rgba(0, 229, 255, 0.04) !important;
+        }
+
+        .pulse-indicator {
+            box-shadow: 0 0 0 0 rgba(0, 208, 132, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 208, 132, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 208, 132, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 208, 132, 0); }
+        }
+
+        /* Spinner Loader */
+        .loader-ring {
+            display: inline-block;
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(0, 229, 255, 0.15);
+            border-radius: 50%;
+            border-top-color: #00E5FF;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Custom Toast */
+        .toast-box {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            left: 24px;
+            margin: auto;
+            max-width: 400px;
+            background: rgba(17, 28, 51, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
+        }
+        @media (min-width: 768px) {
+            .toast-box { left: auto; right: 24px; }
+        }
+        .toast-box.show { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body class="flex h-screen w-full overflow-hidden bg-bgPrimary text-sm md:text-base">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden transition-opacity duration-300 opacity-0 md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside id="appSidebar" class="fixed md:relative inset-y-0 left-0 w-64 md:w-72 bg-bgSecondary border-r border-borderMain flex flex-col flex-shrink-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        
+        <!-- Mobile Close Button -->
+        <button onclick="toggleSidebar()" class="md:hidden absolute top-6 right-4 text-textSecondary hover:text-white bg-bgCard p-1.5 rounded-lg border border-borderMain">
+            <i class="ph-bold ph-x text-lg"></i>
+        </button>
+
+        <!-- Brand Logo -->
+        <div class="h-20 flex items-center px-6 border-b border-borderMain shrink-0 mt-2 md:mt-0">
+            <div class="relative flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-accentCyan to-accentPurple shadow-glow-cyan mr-3 shrink-0">
+                <i class="ph-bold ph-cube text-2xl text-bgPrimary"></i>
+            </div>
+            <div>
+                <h1 class="text-lg md:text-xl font-extrabold tracking-wider text-white leading-none">Mortar Indonesia</h1>
+                <p class="text-[9px] md:text-[10px] text-accentCyan uppercase tracking-widest font-semibold mt-1">Logistics Monitoring</p>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-7">
+            <div>
+                <p class="text-[10px] font-bold text-textSecondary/50 uppercase tracking-widest mb-3 px-3">Main Menu</p>
+                <ul class="space-y-1.5">
+                    <li>
+                        <button id="nav-btn-stock" onclick="handleTabClick('stock')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-accentCyan/20 to-transparent text-accentCyan font-semibold border border-accentCyan/30 shadow-glow-cyan transition-all text-left text-sm">
+                            <i class="ph-bold ph-squares-four text-lg md:text-xl"></i>
+                            <span>Stock Overview</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button id="nav-btn-detail" onclick="handleTabClick('detail')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all text-left group text-sm">
+                            <i class="ph-bold ph-database text-lg md:text-xl group-hover:text-accentPurple transition-colors"></i>
+                            <span>Detail Stok Master</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button id="nav-btn-summary-only" onclick="handleTabClick('summary-only')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all text-left group text-sm">
+                            <i class="ph-bold ph-table text-lg md:text-xl group-hover:text-accentCyan transition-colors"></i>
+                            <span>Ringkasan Stok Overview</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button id="nav-btn-offtake" onclick="handleTabClick('offtake')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all text-left group text-sm">
+                            <i class="ph-bold ph-truck text-lg md:text-xl group-hover:text-accentCyan transition-colors"></i>
+                            <span>Offtake</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button id="nav-btn-pallet" onclick="handleTabClick('pallet')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all text-left group text-sm">
+                            <i class="ph-bold ph-stack text-lg md:text-xl group-hover:text-accentCyan transition-colors"></i>
+                            <span>Pallet</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <p class="text-[10px] font-bold text-textSecondary/50 uppercase tracking-widest mb-3 px-3">System Admin</p>
+                <ul class="space-y-1.5">
+                    <li>
+                        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all group text-sm">
+                            <i class="ph-bold ph-hard-drives text-lg md:text-xl group-hover:text-accentCyan transition-colors"></i>
+                            <span>Data Sources</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all group text-sm">
+                            <i class="ph-bold ph-gear-six text-lg md:text-xl group-hover:text-accentCyan transition-colors"></i>
+                            <span>System Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- System Status Box -->
+        <div class="p-4 border-t border-borderMain bg-bgPrimary/40 shrink-0">
+            <div class="glass-panel rounded-2xl p-4">
+                <p class="text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-2">Live Cloud Health</p>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-statusSuccess pulse-indicator shrink-0"></span>
+                    <span class="text-[11px] md:text-xs font-bold text-white">Google Sheets Active</span>
+                </div>
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center text-[10px] text-textSecondary mt-3 pt-2 border-t border-borderMain gap-2 xl:gap-0">
+                    <span id="sidebarClock" class="truncate">-- --- ---- - --:--</span>
+                    <span class="text-accentCyan font-semibold flex items-center gap-1 cursor-pointer hover:underline shrink-0" onclick="fetchData(true)">
+                        Sync <i class="ph-bold ph-arrows-clockwise"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-bgPrimary w-full">
+
+        <!-- Top Header Navigation -->
+        <header class="min-h-[4rem] md:h-20 py-3 md:py-0 glass-header w-full flex flex-wrap md:flex-nowrap items-center justify-between px-4 md:px-8 z-20 gap-y-3">
             
-            // Simpan pesan asli
-            const originalMessage = messageDiv.innerHTML;
-            
-            // Ubah state tombol
-            btn.innerHTML = 'ESTABLISHING CONNECTION...<br><span class="zh-text">正在建立连接...</span>';
-            btn.style.backgroundColor = '#0f0';
-            btn.style.color = '#000';
-            btn.disabled = true;
+            <!-- Mobile Toggle & Brand -->
+            <div class="flex items-center gap-3 md:hidden">
+                <button onclick="toggleSidebar()" class="text-textSecondary hover:text-white p-1 rounded-lg bg-bgCard border border-borderMain">
+                    <i class="ph-bold ph-list text-xl"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded bg-gradient-to-tr from-accentCyan to-accentPurple flex items-center justify-center">
+                        <i class="ph-bold ph-cube text-xs text-bgPrimary"></i>
+                    </div>
+                    <span class="font-bold text-white text-sm">LMS</span>
+                </div>
+            </div>
 
-            // Simulasi proses loading (2 detik)
-            setTimeout(() => {
-                // Simulasi gagal koneksi
-                messageDiv.innerHTML = '<span style="color: #ff3333; font-weight: bold;">>> FATAL ERROR: TARGET HOST UNREACHABLE. RETRY SEQUENCE ABORTED. <<<br><span class="zh-text" style="color: #ff3333;">>> 致命错误：目标主机不可达。重试序列已中止。 <<</span></span>';
+            <!-- Global Search -->
+            <div class="relative w-full md:w-80 lg:w-96 order-3 md:order-none">
+                <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-textSecondary text-base md:text-lg"></i>
+                <input type="text" id="globalSearchInput" oninput="handleSearch(this.value)" placeholder="Cari SKU, Segment, atau Keyword..." class="w-full bg-bgCard/80 border border-borderMain text-white rounded-xl pl-10 md:pl-11 pr-4 md:pr-12 py-2 md:py-2.5 focus:outline-none focus:border-accentCyan focus:ring-1 focus:ring-accentCyan transition-all text-xs md:text-sm placeholder:text-textSecondary/50">
+                <div class="hidden md:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-textSecondary border border-borderMain px-1.5 py-0.5 rounded bg-bgPrimary">
+                    Ctrl K
+                </div>
+            </div>
+
+            <!-- Top Right Action Controls -->
+            <div class="flex items-center justify-end flex-1 md:flex-none gap-2 md:gap-5 order-2 md:order-none">
+                <div class="hidden sm:flex items-center gap-2 text-xs text-textSecondary bg-bgCard border border-borderMain px-3 py-2 rounded-xl">
+                    <i class="ph-bold ph-arrows-clockwise text-accentCyan animate-spin" style="animation-duration: 4s;"></i>
+                    <span id="syncTimestamp">Auto-Sync: --:-- WIB</span>
+                </div>
+
+                <div class="hidden md:block h-6 w-px bg-borderMain"></div>
+
+                <!-- Notifications -->
+                <button class="relative p-2 md:p-2.5 bg-bgCard hover:bg-white/10 rounded-xl border border-borderMain text-textSecondary hover:text-white transition-all">
+                    <i class="ph-bold ph-bell text-base md:text-lg"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-statusDanger rounded-full border border-bgCard"></span>
+                </button>
+
+                <!-- User Profile -->
+                <div class="relative group">
+                    <div class="flex items-center gap-2 md:gap-3 pl-1.5 md:pl-2 cursor-pointer bg-bgCard/60 border border-borderMain p-1 md:p-1.5 pr-2 md:pr-3 rounded-xl hover:bg-white/5 transition-all">
+                        <div class="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-accentCyan to-accentPurple flex items-center justify-center text-bgPrimary font-extrabold text-xs md:text-sm shadow-glow-cyan">
+                            A
+                        </div>
+                        <div class="hidden md:block">
+                            <p class="text-xs font-bold text-white leading-tight">Admin FG</p>
+                            <p class="text-[10px] text-textSecondary flex items-center gap-1" id="sessionStatusLabel">
+                                <span class="w-1.5 h-1.5 rounded-full bg-statusWarning"></span> Publik Mode
+                            </p>
+                        </div>
+                        <i class="ph-bold ph-caret-down text-textSecondary text-[10px] md:text-xs"></i>
+                    </div>
+
+                    <!-- Dropdown Menu for Logout / Lock -->
+                    <div id="userDropdownMenu" class="hidden group-hover:block absolute right-0 top-full mt-2 w-48 bg-bgCard border border-borderMain rounded-xl shadow-glass p-2 z-50">
+                        <div onclick="logoutSession()" class="flex items-center gap-2 px-3 py-2 text-xs text-statusDanger hover:bg-statusDanger/10 rounded-lg cursor-pointer transition-colors">
+                            <i class="ph-bold ph-sign-out text-base"></i>
+                            <span>Kunci Sesi / Logout</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- SCROLLABLE CONTENT AREA -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 relative" id="scrollArea">
+
+            <!-- Global Loading Screen -->
+            <div id="loadingOverlay" class="absolute inset-0 bg-bgPrimary/90 backdrop-blur-md z-50 flex flex-col items-center justify-center transition-all duration-500">
+                <div class="loader-ring mb-4"></div>
+                <h3 class="text-base md:text-lg font-bold text-white tracking-wide text-center px-4">Menghubungkan ke Google Sheets...</h3>
+                <p class="text-[10px] md:text-xs text-textSecondary mt-1 text-center px-4">Mengambil data dari Sheet Summary & MasterData</p>
+            </div>
+
+            <!-- PAGE TITLE BAR -->
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-6 md:mb-8 gap-4">
+                <div class="flex items-center gap-3 md:gap-4">
+                    <div class="p-2.5 md:p-3.5 bg-gradient-to-br from-accentPurple/20 to-accentCyan/10 border border-accentPurple/30 rounded-2xl shadow-glow-purple shrink-0">
+                        <i class="ph-fill ph-chart-polar text-2xl md:text-3xl text-accentCyan"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-xl md:text-2xl font-black text-white tracking-tight" id="pageTitle">Finished Goods Stock Overview</h2>
+                            <span class="bg-accentCyan/10 text-accentCyan border border-accentCyan/20 text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">LIVE DATA</span>
+                        </div>
+                        <p class="text-[10px] md:text-xs text-textSecondary mt-0.5 md:mt-1" id="pageSubTitle">Real-time FG Analytics & Stock Monitoring Report</p>
+                    </div>
+                </div>
+
+                <!-- Filters & Export Excel -->
+                <div class="flex flex-wrap items-center gap-2 md:gap-3 w-full xl:w-auto mt-2 xl:mt-0">
+                    <div class="flex-1 md:flex-none flex items-center justify-center bg-bgCard border border-borderMain rounded-xl px-3 py-2 text-[10px] md:text-xs min-w-[120px]">
+                        <i class="ph-bold ph-calendar-blank text-accentCyan mr-2"></i>
+                        <span id="currentDateDisplay" class="text-white font-medium truncate">-- --- ----</span>
+                    </div>
+
+                    <!-- Filter Dropdown -->
+                    <select id="segmentFilterSelect" onchange="filterBySegment(this.value)" class="flex-1 md:flex-none bg-bgCard border border-borderMain text-white rounded-xl px-3 py-2 text-[10px] md:text-xs focus:outline-none focus:border-accentCyan transition-all cursor-pointer min-w-[120px] appearance-none">
+                        <option value="ALL">Semua Segment</option>
+                        <option value="RETAIL">Segment: RETAIL</option>
+                        <option value="PROJECT">Segment: PROJECT</option>
+                        <option value="GENERAL">Segment: GENERAL</option>
+                    </select>
+
+                    <!-- CSV Export Button -->
+                    <button onclick="exportData()" class="w-full md:w-auto bg-gradient-to-r from-accentCyan to-blue-500 hover:from-blue-400 hover:to-accentCyan text-bgPrimary font-bold px-4 py-2 rounded-xl shadow-glow-cyan transition-all flex items-center justify-center gap-2 text-[10px] md:text-xs transform hover:scale-105 active:scale-95">
+                        <i class="ph-bold ph-file-csv text-sm md:text-base"></i>
+                        Export CSV (.csv)
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI CARDS GRID -->
+            <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5 mb-6 md:mb-8">
                 
-                // Kembalikan ke keadaan semula setelah 3.5 detik
+                <!-- KPI 1: Space Gudang -->
+                <div class="neon-card cyan-top p-4 md:p-5 flex flex-col justify-between min-h-[140px] md:min-h-[150px] glass-panel">
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <p class="text-[9px] md:text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-0.5">Kapasitas Gudang</p>
+                            <div class="flex items-baseline gap-1.5">
+                                <h3 class="text-xl md:text-2xl font-black text-white font-mono" id="kpiSpacePercent">0%</h3>
+                                <span class="text-[10px] md:text-[11px] font-semibold text-textSecondary">Terpakai</span>
+                            </div>
+                        </div>
+                        <div id="kpiSpaceBadge" class="px-1.5 py-0.5 rounded-lg border text-[9px] md:text-[10px] font-bold flex items-center gap-1 bg-statusSuccess/10 text-statusSuccess border-statusSuccess/20 whitespace-nowrap">
+                            <i class="ph-bold ph-check-circle"></i> Optimal
+                        </div>
+                    </div>
+
+                    <!-- Visual Progress Bar -->
+                    <div class="w-full bg-bgPrimary/80 h-1.5 md:h-2 rounded-full overflow-hidden border border-borderMain/60 my-2">
+                        <div id="kpiSpaceProgressBar" class="h-full bg-gradient-to-r from-accentCyan to-accentPurple rounded-full transition-all duration-700" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Clean Metric Breakdown -->
+                    <div class="grid grid-cols-3 gap-1 pt-2 border-t border-borderMain/50 text-[9px] md:text-[10px]">
+                        <div>
+                            <span class="text-textSecondary/70 block truncate">Terisi</span>
+                            <span class="font-bold text-white font-mono truncate" id="kpiSpaceCurrent">0 Ton</span>
+                        </div>
+                        <div class="text-center">
+                            <span class="text-textSecondary/70 block truncate">Sisa</span>
+                            <span class="font-bold text-accentCyan font-mono truncate" id="kpiSpaceRemaining">0 Ton</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-textSecondary/70 block truncate">Max</span>
+                            <span class="font-bold text-textSecondary font-mono truncate" id="kpiSpaceMax">2.737 T</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 2: Quantity ZAK -->
+                <div class="neon-card purple-top p-4 md:p-5 flex flex-col justify-between min-h-[140px] md:min-h-[150px] glass-panel">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[9px] md:text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">Total Quantity</p>
+                            <h3 class="text-xl md:text-2xl font-black text-white font-mono flex items-baseline gap-1" id="kpiZak">
+                                0 <span class="text-[10px] md:text-xs font-normal text-textSecondary">Zak</span>
+                            </h3>
+                        </div>
+                        <div class="p-2 md:p-2.5 bg-accentPurple/10 border border-accentPurple/20 rounded-xl text-accentPurple shrink-0">
+                            <i class="ph-fill ph-package text-lg md:text-xl"></i>
+                        </div>
+                    </div>
+                    <!-- Dynamic UOM Breakdown Container -->
+                    <div class="mt-2 pt-2 border-t border-borderMain/50 flex flex-wrap gap-1 md:gap-1.5 items-center text-[9px] md:text-[10px]" id="kpiUomBreakdown">
+                        <span class="text-textSecondary/60 italic">Memuat UOM...</span>
+                    </div>
+                </div>
+
+                <!-- KPI 3: Quantity TON -->
+                <div class="neon-card cyan-top p-4 md:p-5 flex flex-col justify-between min-h-[140px] md:min-h-[150px] glass-panel">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[9px] md:text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">Total Qty (TON)</p>
+                            <h3 class="text-xl md:text-2xl font-black text-white font-mono flex items-baseline gap-1" id="kpiTon">
+                                0 <span class="text-[10px] md:text-xs font-normal text-textSecondary">Ton</span>
+                            </h3>
+                        </div>
+                        <div class="p-2 md:p-2.5 bg-accentCyan/10 border border-accentCyan/20 rounded-xl text-accentCyan shrink-0">
+                            <i class="ph-fill ph-truck text-lg md:text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] md:text-xs mt-3">
+                        <span class="text-statusSuccess font-bold flex items-center gap-1 bg-statusSuccess/10 px-1.5 md:px-2 py-0.5 rounded-lg border border-statusSuccess/20 text-[9px] md:text-[10px]">
+                            <i class="ph-bold ph-trend-up"></i> All Segments Sum
+                        </span>
+                    </div>
+                </div>
+
+                <!-- KPI 4: Total SKU -->
+                <div class="neon-card green-top p-4 md:p-5 flex flex-col justify-between min-h-[140px] md:min-h-[150px] glass-panel">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-[9px] md:text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1">Active SKU</p>
+                            <h3 class="text-xl md:text-2xl font-black text-white font-mono flex items-baseline gap-1" id="kpiSku">
+                                0 <span class="text-[10px] md:text-xs font-normal text-textSecondary">SKU</span>
+                            </h3>
+                        </div>
+                        <div class="p-2 md:p-2.5 bg-statusSuccess/10 border border-statusSuccess/20 rounded-xl text-statusSuccess shrink-0">
+                            <i class="ph-fill ph-barcode text-lg md:text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <span class="text-statusSuccess font-bold text-[10px] md:text-[11px]">100% Active Master</span>
+                    </div>
+                </div>
+
+                <!-- KPI 5: Sync Status -->
+                <div class="glass-panel p-4 md:p-5 rounded-2xl flex flex-col justify-center min-h-[140px] md:min-h-[150px] border-l-4 border-l-statusWarning sm:col-span-2 xl:col-span-1">
+                    <p class="text-[9px] md:text-[10px] font-bold text-textSecondary uppercase tracking-widest mb-1 flex items-center justify-between">
+                        Last Update <i class="ph-fill ph-clock text-statusWarning"></i>
+                    </p>
+                    <h3 class="text-lg md:text-xl font-black text-white" id="kpiTimeDisplay">-- --- ----</h3>
+                    <p class="text-[10px] md:text-xs font-mono text-accentCyan mt-0.5" id="kpiClockDisplay">--:--:-- WIB</p>
+                    <p class="text-[9px] md:text-[10px] text-textSecondary mt-2">Cloud Node: Connected</p>
+                </div>
+            </div>
+
+            <!-- MAIN TAB CONTENT AREA -->
+            <div id="mainViewContainer">
+                
+                <!-- TAB 1: STOCK MONITORING VIEW -->
+                <div id="view-stock" class="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+                    
+                    <!-- Table Section (2 Cols) -->
+                    <div class="xl:col-span-2 glass-panel rounded-2xl flex flex-col overflow-hidden h-[450px] md:h-[620px] border border-borderMain">
+                        <!-- Table Header Bar -->
+                        <div class="p-3 md:p-5 border-b border-borderMain bg-bgCard/90 flex justify-between items-center flex-wrap gap-2">
+                            <div class="flex items-center gap-2 md:gap-3">
+                                <i class="ph-fill ph-table text-xl md:text-2xl text-accentCyan"></i>
+                                <div>
+                                    <h3 class="font-bold text-white text-sm md:text-base">FG Stock Summary Report</h3>
+                                    <p class="text-[9px] md:text-xs text-textSecondary" id="tableSubtitle">Per Tanggal: -- --- ----</p>
+                                </div>
+                            </div>
+                            <button onclick="fetchData(true)" class="p-2 md:p-2.5 bg-bgPrimary hover:bg-white/10 border border-borderMain rounded-xl text-textSecondary hover:text-white transition-all text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5 font-semibold">
+                                <i class="ph-bold ph-arrows-clockwise text-accentCyan"></i> Reload
+                            </button>
+                        </div>
+
+                        <!-- Scrollable Table -->
+                        <div class="flex-1 overflow-auto">
+                            <table class="w-full text-left border-collapse whitespace-nowrap text-xs md:text-sm">
+                                <thead class="sticky top-0 bg-[#14213d] z-10 border-b border-borderMain shadow-md">
+                                    <tr class="text-[9px] md:text-[11px] font-bold text-textSecondary uppercase tracking-wider">
+                                        <th class="px-3 md:px-6 py-3 md:py-4">Segment / Details</th>
+                                        <th class="px-3 md:px-6 py-3 md:py-4">SKU Code</th>
+                                        <th class="px-3 md:px-6 py-3 md:py-4 text-right">Weight (KG)</th>
+                                        <th class="px-3 md:px-6 py-3 md:py-4 text-right">Quantity (ZAK)</th>
+                                        <th class="px-3 md:px-6 py-3 md:py-4 text-right">Quantity (TON)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summaryTableBody" class="divide-y divide-borderMain/40 font-sans">
+                                    <!-- Dynamic rows loaded via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right Analytics Sidebar (1 Col) -->
+                    <div class="xl:col-span-1 flex flex-col gap-4 md:gap-6">
+                        
+                        <!-- Donut Chart -->
+                        <div class="glass-panel rounded-2xl p-4 md:p-5 border border-borderMain h-[280px] md:h-[350px] xl:h-[300px] flex flex-col">
+                            <h3 class="font-bold text-white text-[10px] md:text-xs uppercase tracking-widest mb-2 md:mb-3 flex items-center gap-2">
+                                <i class="ph-fill ph-chart-donut text-accentPurple text-base md:text-lg"></i> Segment Stock Share
+                            </h3>
+                            <div class="flex-1 relative flex items-center justify-center w-full min-h-0">
+                                <canvas id="stockDonutChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Top SKU Bar Ranking -->
+                        <div class="glass-panel rounded-2xl p-4 md:p-5 border border-borderMain flex-1 min-h-[250px] md:min-h-0 flex flex-col">
+                            <h3 class="font-bold text-white text-[10px] md:text-xs uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-2">
+                                <i class="ph-fill ph-chart-bar text-accentCyan text-base md:text-lg"></i> Top SKU (TON)
+                            </h3>
+                            <div class="flex-1 overflow-y-auto space-y-3 md:space-y-3.5 pr-2" id="topSkuRankingContainer">
+                                <!-- Top SKU list injected here -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- TAB 2: DETAIL STOK MASTER VIEW -->
+                <div id="view-detail" class="hidden glass-panel rounded-2xl border border-borderMain overflow-hidden h-[500px] md:h-[650px] flex flex-col">
+                    <div class="p-3 md:p-5 border-b border-borderMain bg-bgCard/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h3 class="font-bold text-white text-sm md:text-base flex items-center gap-2">
+                                <i class="ph-fill ph-database text-accentPurple text-lg md:text-xl"></i> Master Data Detail
+                            </h3>
+                            <p class="text-[9px] md:text-xs text-textSecondary mt-0.5">Rincian Stok Dari Sheet MasterData</p>
+                        </div>
+                        <input type="text" id="detailSearchInput" oninput="renderDetailTable(this.value)" placeholder="Filter Master Data..." class="w-full sm:w-auto bg-bgPrimary border border-borderMain text-white rounded-xl px-3 md:px-4 py-2 text-[10px] md:text-xs focus:outline-none focus:border-accentCyan min-w-[200px]">
+                    </div>
+                    <div class="flex-1 overflow-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap text-xs md:text-sm">
+                            <thead class="sticky top-0 bg-[#14213d] z-10 border-b border-borderMain shadow-md">
+                                <tr id="detailTableHeader" class="text-[9px] md:text-[11px] font-bold text-textSecondary uppercase tracking-wider">
+                                    <!-- Dynamic headers -->
+                                </tr>
+                            </thead>
+                            <tbody id="detailTableBody" class="divide-y divide-borderMain/40 font-mono text-[10px] md:text-xs">
+                                <!-- Dynamic detail rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 5: RINGKASAN STOK OVERVIEW (TANPA KPI) -->
+                <div id="view-summary-only" class="hidden glass-panel rounded-2xl border border-borderMain overflow-hidden h-[500px] md:h-[650px] flex flex-col">
+                    <div class="p-3 md:p-5 border-b border-borderMain bg-bgCard/90 flex justify-between items-center flex-wrap gap-2">
+                        <div class="flex items-center gap-2 md:gap-3">
+                            <i class="ph-fill ph-table text-xl md:text-2xl text-accentCyan"></i>
+                            <div>
+                                <h3 class="font-bold text-white text-sm md:text-base">FG Stock Summary (Clean)</h3>
+                                <p class="text-[9px] md:text-xs text-textSecondary" id="tableSubtitleOnly">Per Tanggal: -- --- ----</p>
+                            </div>
+                        </div>
+                        <button onclick="fetchData(true)" class="p-2 md:p-2.5 bg-bgPrimary hover:bg-white/10 border border-borderMain rounded-xl text-textSecondary hover:text-white transition-all text-[10px] md:text-xs flex items-center gap-1 md:gap-1.5 font-semibold">
+                            <i class="ph-bold ph-arrows-clockwise text-accentCyan"></i> Reload
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap text-xs md:text-sm">
+                            <thead class="sticky top-0 bg-[#14213d] z-10 border-b border-borderMain shadow-md">
+                                <tr class="text-[9px] md:text-[11px] font-bold text-textSecondary uppercase tracking-wider">
+                                    <th class="px-3 md:px-6 py-3 md:py-4">Segment / Details</th>
+                                    <th class="px-3 md:px-6 py-3 md:py-4">SKU Code</th>
+                                    <th class="px-3 md:px-6 py-3 md:py-4 text-right">Weight (KG)</th>
+                                    <th class="px-3 md:px-6 py-3 md:py-4 text-right">Quantity (ZAK)</th>
+                                    <th class="px-3 md:px-6 py-3 md:py-4 text-right">Quantity (TON)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summaryTableBodyOnly" class="divide-y divide-borderMain/40 font-sans">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 4: OFFTAKE -->
+                <div id="view-offtake" class="hidden glass-panel rounded-2xl p-6 md:p-16 text-center border border-borderMain flex flex-col items-center justify-center h-[400px] md:h-[650px]">
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-accentPurple/20 to-accentCyan/20 border border-accentPurple/30 rounded-full shadow-glow-purple mb-4 md:mb-6">
+                        <i class="ph-fill ph-cone text-4xl md:text-6xl text-accentPurple animate-pulse"></i>
+                    </div>
+                    <h3 class="text-xl md:text-2xl font-extrabold text-white mb-2 md:mb-3">Modul Dalam Pengembangan</h3>
+                    <p class="text-xs md:text-sm text-textSecondary max-w-md">Modul Offtake Outbound sedang dalam tahap pengembangan dan sinkronisasi server.</p>
+                </div>
+
+                <!-- TAB 6: PALLET -->
+                <div id="view-pallet" class="hidden glass-panel rounded-2xl p-6 md:p-16 text-center border border-borderMain flex flex-col items-center justify-center h-[400px] md:h-[650px]">
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-accentCyan/20 to-accentPurple/20 border border-accentCyan/30 rounded-full shadow-glow-cyan mb-4 md:mb-6">
+                        <i class="ph-fill ph-cone text-4xl md:text-6xl text-accentCyan animate-pulse"></i>
+                    </div>
+                    <h3 class="text-xl md:text-2xl font-extrabold text-white mb-2 md:mb-3">Modul Dalam Pengembangan</h3>
+                    <p class="text-xs md:text-sm text-textSecondary max-w-md">Modul Manajemen Pallet sedang dalam tahap pengembangan struktur data.</p>
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="mt-6 md:mt-10 pt-4 border-t border-borderMain flex flex-col md:flex-row justify-between items-center text-[10px] md:text-xs text-textSecondary gap-2 pb-4">
+                <p class="text-center md:text-left">&copy; 2026 Enterprise Logistics Monitoring System (LMS).</p>
+                <p class="text-center md:text-right">Powered by Abi Habudin | Live Cloud Node Active</p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- AUTHENTICATION MODAL FOR PRIVATE MENU -->
+    <div id="authModal" class="fixed inset-0 bg-bgPrimary/80 backdrop-blur-md z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-bgCard border border-borderMain w-full max-w-md rounded-2xl p-5 md:p-6 shadow-glass relative transform scale-95 transition-transform duration-300" id="authModalContainer">
+            <!-- Close Button -->
+            <button type="button" onclick="closeAuthModal()" class="absolute top-4 right-4 text-textSecondary hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors">
+                <i class="ph-bold ph-x text-xl"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="flex items-center gap-3 mb-5">
+                <div class="p-2.5 md:p-3 bg-accentPurple/20 border border-accentPurple/30 rounded-xl text-accentPurple shadow-glow-purple shrink-0">
+                    <i class="ph-fill ph-lock-key text-xl md:text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-base md:text-lg text-white">Akses Menu Terkunci</h3>
+                    <p class="text-[10px] md:text-xs text-textSecondary">Membutuhkan otorisasi untuk membuka modul ini</p>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form onsubmit="submitAuthForm(event)" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] md:text-xs font-semibold text-textSecondary mb-1.5">Username</label>
+                    <div class="relative">
+                        <i class="ph-bold ph-user absolute left-3.5 top-1/2 -translate-y-1/2 text-textSecondary text-sm"></i>
+                        <input type="text" id="authUsername" required placeholder="Masukkan Username..." class="w-full bg-bgPrimary border border-borderMain text-white rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-accentCyan transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] md:text-xs font-semibold text-textSecondary mb-1.5">Password</label>
+                    <div class="relative">
+                        <i class="ph-bold ph-key absolute left-3.5 top-1/2 -translate-y-1/2 text-textSecondary text-sm"></i>
+                        <input type="password" id="authPassword" required placeholder="Masukkan Password..." class="w-full bg-bgPrimary border border-borderMain text-white rounded-xl pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-accentCyan transition-all">
+                    </div>
+                </div>
+
+                <!-- Error Message Alert -->
+                <div id="authErrorMsg" class="hidden p-3 bg-statusDanger/10 border border-statusDanger/30 rounded-xl text-statusDanger text-[10px] md:text-xs flex items-center gap-2">
+                    <i class="ph-fill ph-warning-circle text-sm md:text-base"></i>
+                    <span id="authErrorText">Username atau Password salah!</span>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex gap-2 md:gap-3 pt-2">
+                    <button type="button" onclick="closeAuthModal()" class="flex-1 py-2 md:py-2.5 bg-bgPrimary hover:bg-white/5 border border-borderMain rounded-xl text-textSecondary text-[10px] md:text-xs font-semibold transition-all">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex-1 py-2 md:py-2.5 bg-gradient-to-r from-accentCyan to-accentPurple text-bgPrimary font-extrabold text-[10px] md:text-xs rounded-xl shadow-glow-cyan hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-lock-key-open text-sm md:text-base"></i>
+                        <span>Buka Akses</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM TOAST NOTIFICATION -->
+    <div id="toast" class="toast-box">
+        <div class="flex items-center gap-3">
+            <i id="toastIcon" class="ph-fill ph-check-circle text-statusSuccess text-xl md:text-2xl shrink-0"></i>
+            <div>
+                <h4 id="toastTitle" class="font-bold text-xs md:text-sm text-white">Notification</h4>
+                <p id="toastMsg" class="text-[10px] md:text-xs text-textSecondary mt-0.5">Data synced successfully.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT APPLICATION LOGIC -->
+    <script>
+        const SHEET_ID = '1A2N2FnkESTgsffNDXQYTPRcrUURZIXdHKBbMeL3YjJI';
+        const GID_SUMMARY = '171218715';
+        const GID_MASTER = '1732584925';
+
+        const URL_SUMMARY_GVIZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID_SUMMARY}`;
+        const URL_SUMMARY_EXPORT = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_SUMMARY}`;
+        const URL_MASTER_GVIZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=MASTERDATA`;
+        const URL_MASTER_EXPORT = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_MASTER}`;
+
+        const FALLBACK_SUMMARY_DATA = [
+            { segment: 'RETAIL', sku: 'D1-R', weight: 40, qtyZak: 5555, qtyTon: 222.2 },
+            { segment: 'RETAIL', sku: 'D2-R', weight: 40, qtyZak: 7430, qtyTon: 297.2 },
+            { segment: 'RETAIL', sku: 'D3-R', weight: 40, qtyZak: 25170, qtyTon: 1006.8 },
+            { segment: 'RETAIL', sku: 'K1-R', weight: 35, qtyZak: 48, qtyTon: 1.7 },
+            { segment: 'RETAIL', sku: 'K2-R', weight: 25, qtyZak: 8196, qtyTon: 204.9 },
+            { segment: 'RETAIL', sku: 'K3-R', weight: 25, qtyZak: 872, qtyTon: 21.8 },
+            { segment: 'RETAIL', sku: 'L1-R', weight: 40, qtyZak: 235, qtyTon: 9.4 },
+            { segment: 'PROJECT', sku: 'D1-P', weight: 40, qtyZak: 3238, qtyTon: 129.5 },
+            { segment: 'PROJECT', sku: 'D2-P', weight: 50, qtyZak: 10292, qtyTon: 514.6 },
+            { segment: 'PROJECT', sku: 'D3-P', weight: 40, qtyZak: 1323, qtyTon: 52.9 }
+        ];
+
+        let summaryData = [];
+        let masterDataRaw = { headers: [], rows: [] };
+        let activeMainTab = 'stock';
+        let stockDonutChartInstance = null;
+
+        let isAuthenticated = false;
+        let pendingTargetTab = null;
+
+        // Credentials admin / admin123
+        const SEC_U = 'YWRtaW4='; 
+        const SEC_P = 'YWRtaW4xMjM=';
+
+        // Sidebar Toggle for Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('-translate-x-full');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            } else {
+                overlay.classList.remove('hidden');
                 setTimeout(() => {
-                    btn.innerHTML = 'INITIATE RECONNECT SEQUENCE<br><span class="zh-text">启动重新连接序列</span>';
-                    btn.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
-                    btn.style.color = '#0f0';
-                    btn.disabled = false;
-                    messageDiv.innerHTML = originalMessage;
-                }, 3500);
+                    overlay.classList.remove('opacity-0');
+                    overlay.classList.add('opacity-100');
+                }, 10);
+            }
+        }
 
-            }, 2000); 
+        function handleTabClick(tabName) {
+            if (window.innerWidth < 768 && !document.getElementById('appSidebar').classList.contains('-translate-x-full')) {
+                toggleSidebar();
+            }
+
+            const privateTabs = ['analytics', 'offtake', 'pallet'];
+            if (privateTabs.includes(tabName)) {
+                if (isAuthenticated) switchMainTab(tabName);
+                else {
+                    pendingTargetTab = tabName;
+                    openAuthModal();
+                }
+            } else {
+                switchMainTab(tabName);
+            }
+        }
+
+        function openAuthModal() {
+            const modal = document.getElementById('authModal');
+            const container = document.getElementById('authModalContainer');
+            const errorMsg = document.getElementById('authErrorMsg');
+
+            document.getElementById('authUsername').value = '';
+            document.getElementById('authPassword').value = '';
+            errorMsg.classList.add('hidden');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                container.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            const container = document.getElementById('authModalContainer');
+
+            modal.classList.add('opacity-0');
+            container.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                pendingTargetTab = null;
+            }, 300);
+        }
+
+        function submitAuthForm(e) {
+            e.preventDefault();
+            const user = document.getElementById('authUsername').value.trim();
+            const pass = document.getElementById('authPassword').value.trim();
+            const errorMsg = document.getElementById('authErrorMsg');
+
+            if (user === atob(SEC_U) && pass === atob(SEC_P)) {
+                isAuthenticated = true;
+                updateAuthUI();
+                closeAuthModal();
+                showToast('Akses Diberikan', 'Sesi privat berhasil diverifikasi.', 'success');
+                if (pendingTargetTab) switchMainTab(pendingTargetTab);
+            } else {
+                errorMsg.classList.remove('hidden');
+                document.getElementById('authErrorText').innerText = 'Username atau Password salah!';
+            }
+        }
+
+        function logoutSession() {
+            isAuthenticated = false;
+            updateAuthUI();
+            showToast('Sesi Terkunci', 'Anda telah kembali ke mode Publik.', 'info');
+            if (['analytics', 'offtake', 'pallet'].includes(activeMainTab)) {
+                switchMainTab('stock');
+            }
+        }
+
+        function updateAuthUI() {
+            const statusLabel = document.getElementById('sessionStatusLabel');
+            if (isAuthenticated) {
+                if (statusLabel) statusLabel.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-statusSuccess"></span> Akses Privat (Aktif)';
+            } else {
+                if (statusLabel) statusLabel.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-statusWarning"></span> Publik Mode';
+            }
+        }
+
+        const fmtNum = (num) => new Intl.NumberFormat('id-ID').format(Math.round(num || 0));
+        const fmtDec = (num) => new Intl.NumberFormat('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(num || 0);
+
+        function cleanNum(val) {
+            if (val === null || val === undefined) return 0;
+            let str = val.toString().trim();
+            if (!str) return 0;
+
+            str = str.replace(/[^\d.,-]/g, '');
+            if (!str) return 0;
+
+            if (str.includes('.') && str.includes(',')) {
+                if (str.lastIndexOf('.') < str.lastIndexOf(',')) str = str.replace(/\./g, '').replace(',', '.');
+                else str = str.replace(/,/g, '');
+            } else if (str.includes(',')) {
+                const parts = str.split(',');
+                if (parts.length === 2 && parts[1].length <= 2) str = str.replace(',', '.');
+                else str = str.replace(/,/g, '');
+            } else if (str.includes('.')) {
+                const parts = str.split('.');
+                if (parts.length > 2) str = str.replace(/\./g, '');
+                else if (parts.length === 2 && parts[1].length === 3) str = str.replace('.', '');
+            }
+            const parsed = parseFloat(str);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            fetchData();
+        });
+
+        function updateClock() {
+            const now = new Date();
+            const dateOptions = { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' };
+            
+            const dateStr = now.toLocaleDateString('en-GB', dateOptions);
+            const timeStr = now.toLocaleTimeString('en-GB', timeOptions) + ' WIB';
+
+            document.getElementById('currentDateDisplay').innerText = dateStr;
+            document.getElementById('kpiTimeDisplay').innerText = dateStr;
+            document.getElementById('kpiClockDisplay').innerText = timeStr;
+            document.getElementById('sidebarClock').innerText = `${dateStr} - ${now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
+            document.getElementById('tableSubtitle').innerText = `Per Tanggal: ${dateStr} ${timeStr}`;
+            const subtitleOnly = document.getElementById('tableSubtitleOnly');
+            if (subtitleOnly) subtitleOnly.innerText = `Per Tanggal: ${dateStr} ${timeStr}`;
+            document.getElementById('syncTimestamp').innerText = `Auto-Sync: ${now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})} WIB`;
+        }
+
+        function showToast(title, msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastTitle').innerText = title;
+            document.getElementById('toastMsg').innerText = msg;
+            
+            const icon = document.getElementById('toastIcon');
+            if(type === 'success') icon.className = 'ph-fill ph-check-circle text-statusSuccess text-xl md:text-2xl shrink-0';
+            else if (type === 'error') icon.className = 'ph-fill ph-warning-circle text-statusDanger text-xl md:text-2xl shrink-0';
+            else icon.className = 'ph-fill ph-info text-accentCyan text-xl md:text-2xl shrink-0';
+
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3500);
+        }
+
+        function fetchData(manual = false) {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            setTimeout(() => document.getElementById('loadingOverlay').style.opacity = '1', 10);
+
+            let summaryParsed = false, masterParsed = false;
+
+            const parseCSV = (url, cbErr, cbSucc) => {
+                Papa.parse(url, { download: true, header: false, skipEmptyLines: true, complete: (res) => cbSucc(res.data), error: cbErr });
+            };
+
+            parseCSV(URL_SUMMARY_GVIZ, () => {
+                parseCSV(URL_SUMMARY_EXPORT, () => {
+                    processSummaryRows(null); summaryParsed = true; checkComplete();
+                }, (rows) => { processSummaryRows(rows); summaryParsed = true; checkComplete(); });
+            }, (rows) => { processSummaryRows(rows); summaryParsed = true; checkComplete(); });
+
+            parseCSV(URL_MASTER_GVIZ, () => {
+                parseCSV(URL_MASTER_EXPORT, () => {
+                    masterParsed = true; checkComplete();
+                }, (rows) => { processMasterRows(rows); masterParsed = true; checkComplete(); });
+            }, (rows) => { processMasterRows(rows); masterParsed = true; checkComplete(); });
+
+            function checkComplete() {
+                if(summaryParsed) {
+                    renderSummaryTable();
+                    updateKPIs();
+                    renderCharts();
+                    
+                    const overlay = document.getElementById('loadingOverlay');
+                    overlay.style.opacity = '0';
+                    setTimeout(() => overlay.style.display = 'none', 500);
+
+                    if(manual) showToast('Sync Complete', 'Data berhasil diperbarui.');
+                }
+            }
+        }
+
+        function processSummaryRows(matrix) {
+            if (!matrix || matrix.length === 0) { summaryData = FALLBACK_SUMMARY_DATA; return; }
+            let headerIdx = -1;
+            for (let i = 0; i < matrix.length; i++) {
+                const rowStr = matrix[i].join(' ').toLowerCase();
+                if (rowStr.includes('segment') || rowStr.includes('sku')) { headerIdx = i; break; }
+            }
+            if (headerIdx === -1) { summaryData = FALLBACK_SUMMARY_DATA; return; }
+
+            const headers = matrix[headerIdx].map(h => h ? h.toString().trim().toLowerCase() : '');
+            let colSeg = headers.findIndex(h => h.includes('segment')), colSku = headers.findIndex(h => h.includes('sku'));
+            let colWeight = headers.findIndex(h => h.includes('weight') || h.includes('berat')), colZak = headers.findIndex(h => h.includes('zak') || h.includes('qty'));
+            let colTon = headers.findIndex(h => h.includes('ton'));
+
+            if (colSeg === -1) colSeg = 0; if (colSku === -1) colSku = 1;
+
+            const parsed = [];
+            for (let i = headerIdx + 1; i < matrix.length; i++) {
+                const row = matrix[i];
+                if (!row || row.length === 0) continue;
+                const segVal = row[colSeg] ? row[colSeg].toString().trim().toUpperCase() : '';
+                if (!segVal || segVal === 'UNKNOWN' || segVal === 'TOTAL') continue;
+
+                parsed.push({
+                    segment: segVal,
+                    sku: row[colSku] ? row[colSku].toString().trim() : '-',
+                    weight: colWeight !== -1 ? cleanNum(row[colWeight]) : 0,
+                    qtyZak: colZak !== -1 ? cleanNum(row[colZak]) : 0,
+                    qtyTon: colTon !== -1 ? cleanNum(row[colTon]) : 0
+                });
+            }
+            summaryData = parsed.length > 0 ? parsed : FALLBACK_SUMMARY_DATA;
+        }
+
+        function processMasterRows(matrix) {
+            if (!matrix || matrix.length === 0) return;
+            const headerKeywords = ['item', 'sku', 'code', 'desc', 'nama', 'barang', 'zak', 'qty', 'uom', 'satuan', 'weight', 'berat', 'segment'];
+            let bestHeaderIdx = -1, maxScore = -1;
+
+            for (let i = 0; i < Math.min(matrix.length, 15); i++) {
+                const row = matrix[i];
+                if (!row) continue;
+                const filledCells = row.filter(c => c && c.toString().trim() !== '');
+                if (filledCells.length === 0) continue;
+                let score = 0;
+                row.forEach(cell => {
+                    if (!cell) return;
+                    const cellStr = cell.toString().toLowerCase().trim();
+                    headerKeywords.forEach(kw => { if (cellStr.includes(kw)) score += 10; });
+                });
+                if (filledCells.length >= 2) score += filledCells.length * 2;
+                if (score > maxScore) { maxScore = score; bestHeaderIdx = i; }
+            }
+            if (bestHeaderIdx === -1 || maxScore < 10) bestHeaderIdx = 0;
+
+            const rawHeaders = matrix[bestHeaderIdx].map(h => h ? h.toString().replace(/[\r\n]+/g, ' ').trim() : '');
+            let maxCols = rawHeaders.length;
+            const rawRows = matrix.slice(bestHeaderIdx + 1);
+            rawRows.forEach(r => { if (r.length > maxCols) maxCols = r.length; });
+
+            const cleanedHeaders = [];
+            for (let c = 0; c < maxCols; c++) {
+                let hName = rawHeaders[c] || '';
+                if (!hName) {
+                    if (rawRows.some(r => r[c] && r[c].toString().trim() !== '')) hName = `Kolom ${c + 1}`;
+                }
+                cleanedHeaders.push(hName);
+            }
+            while (cleanedHeaders.length > 0 && !cleanedHeaders[cleanedHeaders.length - 1]) cleanedHeaders.pop();
+
+            const validRows = [];
+            rawRows.forEach(r => {
+                if (!r || r.length === 0) return;
+                const firstCell = (r[0] || '').toString().toLowerCase().trim();
+                if (firstCell.includes('lms') || firstCell.includes('report') || firstCell.includes('logistics')) return;
+                const rowCells = [];
+                for (let c = 0; c < cleanedHeaders.length; c++) rowCells.push(r[c] !== undefined && r[c] !== null ? r[c].toString().trim() : '');
+                if (rowCells.some(cell => cell !== '')) validRows.push(rowCells);
+            });
+
+            masterDataRaw.headers = cleanedHeaders;
+            masterDataRaw.rows = validRows;
+            renderDetailTable(); updateKPIs();
+        }
+
+        function updateKPIs() {
+            let totalZakSummary = 0, totalTon = 0;
+            const uniqueSKUs = new Set();
+
+            summaryData.forEach(item => {
+                totalTon += item.qtyTon;
+                totalZakSummary += item.qtyZak;
+                if(item.sku && item.sku !== '-') uniqueSKUs.add(item.sku);
+            });
+
+            let masterZakSum = 0, hasMasterData = false;
+            const uomGroup = {};
+
+            if (masterDataRaw.headers && masterDataRaw.headers.length > 0 && masterDataRaw.rows.length > 0) {
+                const headers = masterDataRaw.headers.map(h => h.toLowerCase());
+                let colQtyZak = headers.findIndex(h => h.includes('qty zak') || h.includes('qty_zak') || h.includes('jumlah zak') || h.includes('zak'));
+                if (colQtyZak === -1) colQtyZak = headers.findIndex(h => h.includes('qty') || h.includes('jumlah') || h.includes('stok'));
+                let colUom = headers.findIndex(h => h.includes('uom') || h.includes('satuan') || h.includes('unit'));
+
+                if (colQtyZak !== -1) {
+                    hasMasterData = true;
+                    masterDataRaw.rows.forEach(row => {
+                        const qty = cleanNum(row[colQtyZak]);
+                        masterZakSum += qty;
+                        let uom = colUom !== -1 && row[colUom] ? row[colUom].toString().trim().toUpperCase() : 'ZAK';
+                        if (!uom) uom = 'ZAK';
+                        uomGroup[uom] = (uomGroup[uom] || 0) + qty;
+                    });
+                }
+            }
+            if (!hasMasterData) uomGroup['ZAK'] = totalZakSummary;
+            const finalZakTotal = hasMasterData ? masterZakSum : totalZakSummary;
+
+            const WAREHOUSE_CAPACITY_TON = 2737;
+            const spacePct = WAREHOUSE_CAPACITY_TON > 0 ? (totalTon / WAREHOUSE_CAPACITY_TON) * 100 : 0;
+            const remainingTon = Math.max(0, WAREHOUSE_CAPACITY_TON - totalTon);
+
+            const percentEl = document.getElementById('kpiSpacePercent');
+            const currentEl = document.getElementById('kpiSpaceCurrent');
+            const remainingEl = document.getElementById('kpiSpaceRemaining');
+            const maxEl = document.getElementById('kpiSpaceMax');
+            const barEl = document.getElementById('kpiSpaceProgressBar');
+            const badgeEl = document.getElementById('kpiSpaceBadge');
+
+            if (percentEl) percentEl.innerText = `${fmtDec(spacePct)}%`;
+            if (currentEl) currentEl.innerText = `${fmtDec(totalTon)} Ton`;
+            if (remainingEl) remainingEl.innerText = `${fmtDec(remainingTon)} Ton`;
+            if (maxEl) maxEl.innerText = `${fmtDec(WAREHOUSE_CAPACITY_TON)} T`;
+
+            if (barEl) {
+                const clampedPct = Math.min(100, Math.max(0, spacePct));
+                barEl.style.width = `${clampedPct}%`;
+                if (clampedPct > 90) barEl.className = "h-full bg-statusDanger rounded-full transition-all duration-700";
+                else if (clampedPct > 75) barEl.className = "h-full bg-statusWarning rounded-full transition-all duration-700";
+                else barEl.className = "h-full bg-gradient-to-r from-accentCyan to-accentPurple rounded-full transition-all duration-700";
+            }
+
+            if (badgeEl) {
+                if (spacePct > 90) {
+                    badgeEl.className = 'px-1.5 py-0.5 rounded-lg border text-[9px] md:text-[10px] font-bold flex items-center gap-1 bg-statusDanger/10 text-statusDanger border-statusDanger/20';
+                    badgeEl.innerHTML = '<i class="ph-bold ph-warning"></i> Penuh';
+                } else if (spacePct > 75) {
+                    badgeEl.className = 'px-1.5 py-0.5 rounded-lg border text-[9px] md:text-[10px] font-bold flex items-center gap-1 bg-statusWarning/10 text-statusWarning border-statusWarning/20';
+                    badgeEl.innerHTML = '<i class="ph-bold ph-info"></i> Tinggi';
+                } else {
+                    badgeEl.className = 'px-1.5 py-0.5 rounded-lg border text-[9px] md:text-[10px] font-bold flex items-center gap-1 bg-statusSuccess/10 text-statusSuccess border-statusSuccess/20';
+                    badgeEl.innerHTML = '<i class="ph-bold ph-check-circle"></i> Optimal';
+                }
+            }
+
+            document.getElementById('kpiZak').innerHTML = `${fmtNum(finalZakTotal)} <span class="text-[10px] md:text-xs font-normal text-textSecondary">Total</span>`;
+            document.getElementById('kpiTon').innerHTML = `${fmtDec(totalTon)} <span class="text-[10px] md:text-xs font-normal text-textSecondary">Ton</span>`;
+            document.getElementById('kpiSku').innerHTML = `${uniqueSKUs.size} <span class="text-[10px] md:text-xs font-normal text-textSecondary">SKU</span>`;
+
+            const uomContainer = document.getElementById('kpiUomBreakdown');
+            if (uomContainer) {
+                uomContainer.innerHTML = '';
+                const uomKeys = Object.keys(uomGroup);
+                if (uomKeys.length > 0) {
+                    uomKeys.forEach(uomKey => {
+                        uomContainer.insertAdjacentHTML('beforeend', `
+                            <span class="bg-accentPurple/20 text-accentPurple border border-accentPurple/30 px-1.5 py-0.5 rounded-md font-mono font-bold flex items-center gap-1 text-[9px] md:text-[10px]">
+                                <span>${uomKey}:</span><span class="text-white">${fmtNum(uomGroup[uomKey])}</span>
+                            </span>
+                        `);
+                    });
+                } else {
+                    uomContainer.innerHTML = '<span class="text-textSecondary text-[9px] md:text-[10px]">No UOM data</span>';
+                }
+            }
+        }
+
+        function renderSummaryTable(filterQuery = '', segmentFilter = 'ALL') {
+            const tbody = document.getElementById('summaryTableBody');
+            const tbodyOnly = document.getElementById('summaryTableBodyOnly');
+            const grouped = {};
+
+            summaryData.forEach(item => {
+                if (segmentFilter !== 'ALL' && item.segment !== segmentFilter) return;
+                if (filterQuery) {
+                    const q = filterQuery.toLowerCase();
+                    if (!item.segment.toLowerCase().includes(q) && !item.sku.toLowerCase().includes(q)) return;
+                }
+                if (!grouped[item.segment]) grouped[item.segment] = [];
+                grouped[item.segment].push(item);
+            });
+
+            const customOrder = ['RETAIL', 'PROJECT', 'GENERAL'];
+            const segments = Object.keys(grouped).sort((a, b) => {
+                let idxA = customOrder.indexOf(a.toUpperCase());
+                let idxB = customOrder.indexOf(b.toUpperCase());
+                if (idxA === -1) idxA = 999; if (idxB === -1) idxB = 999;
+                return (idxA !== idxB) ? idxA - idxB : a.localeCompare(b);
+            });
+
+            if (segments.length === 0) {
+                const emptyRow = `<tr><td colspan="5" class="px-6 py-12 text-center text-textSecondary italic text-xs md:text-sm">Tidak ada data stok yang sesuai dengan filter.</td></tr>`;
+                if (tbody) tbody.innerHTML = emptyRow;
+                if (tbodyOnly) tbodyOnly.innerHTML = emptyRow;
+                return;
+            }
+
+            let fullHtml = '';
+            segments.forEach(seg => {
+                const items = grouped[seg];
+                const sumTon = items.reduce((a, b) => a + b.qtyTon, 0);
+                
+                let accentColor = seg === 'PROJECT' ? 'text-accentPurple' : seg === 'GENERAL' ? 'text-statusSuccess' : 'text-accentCyan';
+                let borderTint = seg === 'PROJECT' ? 'border-l-accentPurple' : seg === 'GENERAL' ? 'border-l-statusSuccess' : 'border-l-accentCyan';
+                let bgTint = seg === 'PROJECT' ? 'bg-accentPurple/5' : seg === 'GENERAL' ? 'bg-statusSuccess/5' : 'bg-accentCyan/5';
+
+                fullHtml += `
+                    <tr class="cursor-pointer ${bgTint} border-l-4 ${borderTint} border-b border-borderMain transition-all hover:bg-white/5" onclick="toggleGroupRow('${seg}')">
+                        <td colspan="5" class="px-3 md:px-6 py-2.5 md:py-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
+                                <div class="flex items-center gap-2 md:gap-3">
+                                    <i class="ph-bold ph-caret-down text-textSecondary transition-transform duration-300 text-xs md:text-sm" id="icon-group-${seg}"></i>
+                                    <span class="font-bold text-white uppercase tracking-wider flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs">
+                                        <i class="ph-fill ph-folder-open ${accentColor} text-sm md:text-base"></i> Segment: ${seg}
+                                    </span>
+                                    <span class="text-[9px] md:text-[10px] font-mono text-textSecondary bg-bgPrimary/60 px-2 py-0.5 rounded-full border border-borderMain">
+                                        ${items.length} Items
+                                    </span>
+                                </div>
+                                <div class="text-[10px] md:text-xs font-mono font-bold text-white sm:text-right pl-6 sm:pl-0">
+                                    Subtotal: <span class="${accentColor}">${fmtDec(sumTon)} TON</span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                items.forEach(item => {
+                    fullHtml += `
+                        <tr class="row-group-${seg} table-row-hover border-b border-borderMain/40 text-textSecondary transition-colors">
+                            <td class="px-3 md:px-6 py-2 md:py-3 pl-8 md:pl-12 font-medium text-[10px] md:text-xs text-textSecondary">${item.segment}</td>
+                            <td class="px-3 md:px-6 py-2 md:py-3 font-bold text-white font-mono text-[10px] md:text-xs">${item.sku}</td>
+                            <td class="px-3 md:px-6 py-2 md:py-3 text-right font-mono text-[10px] md:text-xs">${fmtNum(item.weight)}</td>
+                            <td class="px-3 md:px-6 py-2 md:py-3 text-right font-mono text-[10px] md:text-xs">${fmtNum(item.qtyZak)}</td>
+                            <td class="px-3 md:px-6 py-2 md:py-3 text-right font-mono text-[10px] md:text-xs font-bold text-accentCyan">${fmtDec(item.qtyTon)}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            if (tbody) tbody.innerHTML = fullHtml;
+            if (tbodyOnly) tbodyOnly.innerHTML = fullHtml;
+        }
+
+        window.toggleGroupRow = function(seg) {
+            const rows = document.querySelectorAll(`.row-group-${seg}`);
+            const icon = document.getElementById(`icon-group-${seg}`);
+            let isHidden = false;
+            rows.forEach(r => {
+                if(r.style.display === 'none') { r.style.display = 'table-row'; isHidden = false; }
+                else { r.style.display = 'none'; isHidden = true; }
+            });
+            if (icon) icon.style.transform = isHidden ? 'rotate(-90deg)' : 'rotate(0deg)';
+        };
+
+        function renderDetailTable(query = '') {
+            const thead = document.getElementById('detailTableHeader');
+            const tbody = document.getElementById('detailTableBody');
+
+            if (!masterDataRaw.headers || masterDataRaw.headers.length === 0) {
+                tbody.innerHTML = `<tr><td class="p-6 text-center text-textSecondary" colspan="10">Data belum dimuat.</td></tr>`;
+                return;
+            }
+
+            const headers = masterDataRaw.headers;
+            thead.innerHTML = headers.map(h => {
+                const lower = (h || '').toLowerCase();
+                const isNum = lower.includes('qty') || lower.includes('zak') || lower.includes('ton') || lower.includes('jumlah') || lower.includes('stok') || lower.includes('weight') || lower.includes('berat');
+                return `<th class="px-3 md:px-6 py-3 md:py-4 ${isNum ? 'text-right' : 'text-left'} font-extrabold text-white tracking-wider">${h || '-'}</th>`;
+            }).join('');
+
+            const filteredRows = masterDataRaw.rows.filter(r => !query || r.join(' ').toLowerCase().includes(query.toLowerCase()));
+
+            if (filteredRows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${headers.length}" class="px-6 py-12 text-center text-textSecondary italic">Tidak ada data.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredRows.map(row => {
+                const cellsHtml = headers.map((h, colIdx) => {
+                    const cellVal = row[colIdx] !== undefined ? row[colIdx] : '-';
+                    const lowerH = (h || '').toLowerCase();
+                    const isNumCol = lowerH.includes('qty') || lowerH.includes('zak') || lowerH.includes('ton') || lowerH.includes('jumlah') || lowerH.includes('stok') || lowerH.includes('weight') || lowerH.includes('berat');
+                    
+                    if (isNumCol) {
+                        const num = cleanNum(cellVal);
+                        const isDec = lowerH.includes('ton') || lowerH.includes('berat') || lowerH.includes('weight');
+                        const formatted = cellVal === '-' || cellVal === '' ? '-' : (isDec ? fmtDec(num) : fmtNum(num));
+                        return `<td class="px-3 md:px-6 py-2.5 md:py-3.5 text-right font-mono font-bold text-accentCyan">${formatted}</td>`;
+                    }
+                    if (lowerH.includes('no') || lowerH.includes('sku') || lowerH.includes('code') || lowerH.includes('item')) {
+                        return `<td class="px-3 md:px-6 py-2.5 md:py-3.5 font-mono font-bold text-white">${cellVal || '-'}</td>`;
+                    }
+                    if (lowerH.includes('desc') || lowerH.includes('nama') || lowerH.includes('barang') || lowerH.includes('material')) {
+                        return `<td class="px-3 md:px-6 py-2.5 md:py-3.5 font-sans font-medium text-white/90 min-w-[150px] md:min-w-[220px] whitespace-normal">${cellVal || '-'}</td>`;
+                    }
+                    return `<td class="px-3 md:px-6 py-2.5 md:py-3.5 text-textSecondary">${cellVal || '-'}</td>`;
+                }).join('');
+                return `<tr class="table-row-hover border-b border-borderMain/30 transition-colors">${cellsHtml}</tr>`;
+            }).join('');
+        }
+
+        function renderCharts() {
+            const segMap = {};
+            summaryData.forEach(item => { segMap[item.segment] = (segMap[item.segment] || 0) + item.qtyTon; });
+
+            const customOrder = ['RETAIL', 'PROJECT', 'GENERAL'];
+            const labels = Object.keys(segMap).sort((a, b) => {
+                let idxA = customOrder.indexOf(a.toUpperCase()); let idxB = customOrder.indexOf(b.toUpperCase());
+                if (idxA === -1) idxA = 999; if (idxB === -1) idxB = 999;
+                return (idxA !== idxB) ? idxA - idxB : a.localeCompare(b);
+            });
+            const dataVals = labels.map(l => segMap[l]);
+            
+            const isMobile = window.innerWidth < 768;
+            
+            const ctxDonut = document.getElementById('stockDonutChart').getContext('2d');
+            if(stockDonutChartInstance) stockDonutChartInstance.destroy();
+
+            stockDonutChartInstance = new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataVals,
+                        backgroundColor: ['#00E5FF', '#6D5DF6', '#00D084', '#FFB800'].slice(0, labels.length),
+                        borderWidth: 0, hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    layout: { padding: isMobile ? 10 : 0 },
+                    plugins: {
+                        legend: {
+                            position: isMobile ? 'bottom' : 'right',
+                            labels: {
+                                color: '#B8C0D9', font: { family: 'Plus Jakarta Sans', size: isMobile ? 10 : 11 },
+                                usePointStyle: true, padding: isMobile ? 10 : 16, boxWidth: 6
+                            }
+                        }
+                    }
+                }
+            });
+
+            const skuMap = {};
+            summaryData.forEach(item => { if(item.sku && item.sku !== '-') skuMap[item.sku] = (skuMap[item.sku] || 0) + item.qtyTon; });
+            const sortedSKUs = Object.keys(skuMap).map(k => ({ sku: k, ton: skuMap[k] })).sort((a, b) => b.ton - a.ton).slice(0, 5);
+            const maxVal = sortedSKUs.length > 0 ? sortedSKUs[0].ton : 1;
+            
+            const container = document.getElementById('topSkuRankingContainer');
+            container.innerHTML = '';
+
+            sortedSKUs.forEach((item, index) => {
+                const pct = (item.ton / maxVal) * 100;
+                const barColor = index === 0 ? 'bg-accentCyan' : index === 1 ? 'bg-accentPurple' : 'bg-statusSuccess';
+                container.insertAdjacentHTML('beforeend', `
+                    <div>
+                        <div class="flex justify-between items-center text-[10px] md:text-xs mb-1">
+                            <span class="font-bold text-white font-mono truncate mr-2">${index + 1}. ${item.sku}</span>
+                            <span class="text-textSecondary font-mono shrink-0">${fmtDec(item.ton)} TON</span>
+                        </div>
+                        <div class="h-1.5 md:h-2 w-full bg-bgPrimary rounded-full overflow-hidden">
+                            <div class="h-full ${barColor} rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function switchMainTab(tabName) {
+            activeMainTab = tabName;
+            const kpiContainer = document.getElementById('kpiContainer');
+            if (kpiContainer) {
+                if (['detail', 'summary-only', 'offtake', 'pallet'].includes(tabName)) kpiContainer.classList.add('hidden');
+                else kpiContainer.classList.remove('hidden');
+            }
+
+            ['stock', 'detail', 'summary-only', 'offtake', 'pallet'].forEach(t => {
+                const view = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if(t === tabName) {
+                    if (view) view.classList.remove('hidden');
+                    if(btn) btn.className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-accentCyan/20 to-transparent text-accentCyan font-semibold border border-accentCyan/30 shadow-glow-cyan transition-all text-left text-sm";
+                } else {
+                    if (view) view.classList.add('hidden');
+                    if(btn) btn.className = "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-textSecondary hover:text-white hover:bg-white/5 transition-all text-left group text-sm";
+                }
+            });
+
+            const titles = {
+                'stock': ['Finished Goods Stock Overview', 'Real-time FG Analytics & Stock Monitoring Report'],
+                'detail': ['Detail Master Data Stok', 'Rincian Operasional & Master Item'],
+                'summary-only': ['Ringkasan Stok Overview', 'Tabel Ringkasan Stok Finished Goods'],
+                'offtake': ['Offtake Module', 'Restricted Access Module'],
+                'pallet': ['Pallet Management', 'Restricted Access Module']
+            };
+
+            if (titles[tabName]) {
+                document.getElementById('pageTitle').innerText = titles[tabName][0];
+                document.getElementById('pageSubTitle').innerText = titles[tabName][1];
+            }
+        }
+
+        function handleSearch(val) {
+            renderSummaryTable(val, document.getElementById('segmentFilterSelect').value);
+            renderDetailTable(val);
+        }
+
+        function filterBySegment(val) {
+            renderSummaryTable(document.getElementById('globalSearchInput').value, val);
+        }
+
+        /**
+         * Dynamic CSV Export Generator using PapaParse & Blob
+         * Creates clean .csv files with UTF-8 BOM encoding for seamless opening in Excel
+         */
+        function exportData() {
+            try {
+                if ((!summaryData || summaryData.length === 0) && (!masterDataRaw.rows || masterDataRaw.rows.length === 0)) {
+                    showToast('Export Gagal', 'Tidak ada data stok untuk diexport ke CSV.', 'error');
+                    return;
+                }
+
+                let rows = [];
+                let filePrefix = 'Stock_Summary';
+
+                // Export data sesuai tab aktif (Summary atau Master Data Detail)
+                if (activeMainTab === 'detail' && masterDataRaw.headers && masterDataRaw.headers.length > 0) {
+                    filePrefix = 'Master_Data';
+                    rows.push(masterDataRaw.headers);
+                    masterDataRaw.rows.forEach(r => rows.push(r));
+                } else {
+                    filePrefix = 'Stock_Summary';
+                    rows.push(["Segment", "SKU Code", "Weight (KG)", "Quantity (ZAK)", "Quantity (TON)"]);
+
+                    const grouped = {};
+                    summaryData.forEach(item => {
+                        if (!grouped[item.segment]) grouped[item.segment] = [];
+                        grouped[item.segment].push(item);
+                    });
+
+                    const customOrder = ['RETAIL', 'PROJECT', 'GENERAL'];
+                    const segments = Object.keys(grouped).sort((a, b) => {
+                        let idxA = customOrder.indexOf(a.toUpperCase());
+                        let idxB = customOrder.indexOf(b.toUpperCase());
+                        if (idxA === -1) idxA = 999; if (idxB === -1) idxB = 999;
+                        return (idxA !== idxB) ? idxA - idxB : a.localeCompare(b);
+                    });
+
+                    segments.forEach(seg => {
+                        const items = grouped[seg];
+                        items.forEach(item => {
+                            rows.push([
+                                item.segment,
+                                item.sku,
+                                item.weight,
+                                item.qtyZak,
+                                item.qtyTon
+                            ]);
+                        });
+                    });
+                }
+
+                // Generate string CSV menggunakan PapaParse
+                const csvContent = Papa.unparse(rows);
+
+                // Tambahkan UTF-8 BOM (\uFEFF) agar Microsoft Excel membuka CSV tanpa karakter terdistorsi
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+                const now = new Date();
+                const dateStr = now.toISOString().slice(0, 10);
+                const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '-');
+                const filename = `LMS_${filePrefix}_${dateStr}_${timeStr}.csv`;
+
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showToast('Export Berhasil', `File '${filename}' berhasil diunduh sebagai CSV (.csv).`, 'success');
+
+            } catch (err) {
+                console.error('Export Error:', err);
+                showToast('Export Gagal', 'Gagal memproses file CSV: ' + err.message, 'error');
+            }
         }
     </script>
 </body>
