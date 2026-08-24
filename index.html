@@ -1,20 +1,1370 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0; url=https://fg-logistics.github.io/FG/">
-  <title>FG Logistics</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script>
-    window.location.replace("https://fg-logistics.github.io/FG/");
-  </script>
+<title>FG Logistics — Secure Connection</title>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  font-family:
+    Inter,
+    Segoe UI,
+    Arial,
+    sans-serif;
+}
+
+body {
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      #123b59 0%,
+      #071a29 35%,
+      #030b12 70%,
+      #010407 100%
+    );
+
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ==========================================
+   DIGITAL BACKGROUND
+========================================== */
+
+.background-grid {
+
+  position: fixed;
+  inset: 0;
+
+  opacity: .18;
+
+  background-image:
+    linear-gradient(
+      rgba(0,198,255,.12) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0,198,255,.12) 1px,
+      transparent 1px
+    );
+
+  background-size: 55px 55px;
+
+  mask-image:
+    radial-gradient(
+      circle at center,
+      black 0%,
+      transparent 75%
+    );
+
+  animation:
+    gridMove 12s linear infinite;
+
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(55px);
+  }
+
+}
+
+
+/* ==========================================
+   PARTICLES
+========================================== */
+
+.particles {
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+
+  position: absolute;
+
+  width: 2px;
+  height: 2px;
+
+  border-radius: 50%;
+
+  background: #4ddcff;
+
+  box-shadow:
+    0 0 8px #00c6ff;
+
+  opacity: 0;
+
+  animation:
+    particleFloat
+    var(--duration)
+    linear infinite;
+
+  animation-delay:
+    var(--delay);
+}
+
+@keyframes particleFloat {
+
+  0% {
+
+    transform:
+      translateY(110vh)
+      translateX(0);
+
+    opacity: 0;
+  }
+
+  10% {
+    opacity: .8;
+  }
+
+  80% {
+    opacity: .5;
+  }
+
+  100% {
+
+    transform:
+      translateY(-10vh)
+      translateX(var(--move));
+
+    opacity: 0;
+  }
+
+}
+
+
+/* ==========================================
+   MAIN
+========================================== */
+
+.loading-container {
+
+  position: relative;
+
+  width: 90%;
+  max-width: 520px;
+
+  text-align: center;
+
+  z-index: 5;
+
+  animation:
+    containerIn
+    .9s
+    cubic-bezier(.2,.8,.2,1);
+}
+
+@keyframes containerIn {
+
+  from {
+
+    opacity: 0;
+
+    transform:
+      translateY(20px)
+      scale(.97);
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+
+}
+
+
+/* ==========================================
+   MORTAR LOGO
+========================================== */
+
+.mortar-logo {
+
+  width: 150px;
+  height: 70px;
+
+  margin:
+    0 auto 24px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  background:
+    transparent;
+
+  animation:
+    mortarFloat
+    3s
+    ease-in-out
+    infinite;
+}
+
+.mortar-logo img {
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  background:
+    transparent;
+
+  border: none;
+
+  filter:
+    drop-shadow(
+      0 0 8px
+      rgba(255,255,255,.10)
+    )
+    drop-shadow(
+      0 0 20px
+      rgba(0,198,255,.18)
+    );
+}
+
+@keyframes mortarFloat {
+
+  0%,
+  100% {
+
+    transform:
+      translateY(0);
+  }
+
+  50% {
+
+    transform:
+      translateY(-4px);
+  }
+
+}
+
+
+/* ==========================================
+   FG LOGISTICS BRAND
+========================================== */
+
+.brand {
+
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  gap: 15px;
+
+  margin-bottom: 12px;
+}
+
+
+/* ==========================================
+   FG MARK
+========================================== */
+
+.brand-mark {
+
+  position: relative;
+
+  width: 64px;
+  height: 64px;
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border:
+    1px solid
+    rgba(0,198,255,.65);
+
+  border-radius:
+    15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(0,198,255,.13),
+      rgba(0,90,150,.04)
+    );
+
+  box-shadow:
+
+    0 0 20px
+    rgba(0,198,255,.10),
+
+    inset 0 0 20px
+    rgba(0,198,255,.05);
+
+  overflow:
+    hidden;
+}
+
+
+/* ROTATING BORDER */
+
+.brand-mark::before {
+
+  content: "";
+
+  position:
+    absolute;
+
+  inset:
+    -2px;
+
+  border-radius:
+    17px;
+
+  border:
+    1px solid
+    transparent;
+
+  border-top-color:
+    #00c6ff;
+
+  animation:
+    rotateBorder
+    2.5s
+    linear
+    infinite;
+}
+
+@keyframes rotateBorder {
+
+  to {
+
+    transform:
+      rotate(360deg);
+  }
+
+}
+
+
+/* SCAN LINE */
+
+.brand-mark::after {
+
+  content: "";
+
+  position:
+    absolute;
+
+  left: 0;
+
+  top: -20px;
+
+  width: 100%;
+
+  height: 18px;
+
+  background:
+    linear-gradient(
+      transparent,
+      rgba(0,198,255,.25),
+      transparent
+    );
+
+  animation:
+    markScan
+    2s
+    ease-in-out
+    infinite;
+}
+
+@keyframes markScan {
+
+  0% {
+    top: -20px;
+  }
+
+  100% {
+    top: 70px;
+  }
+
+}
+
+
+.brand-mark span {
+
+  font-size:
+    25px;
+
+  font-weight:
+    900;
+
+  letter-spacing:
+    -2px;
+
+  color:
+    white;
+
+  text-shadow:
+    0 0 15px
+    rgba(0,198,255,.5);
+}
+
+
+/* ==========================================
+   WORDMARK
+========================================== */
+
+.brand-name {
+
+  text-align:
+    left;
+}
+
+.brand-main {
+
+  font-size:
+    25px;
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    1px;
+
+  line-height:
+    1;
+}
+
+.brand-main span {
+
+  color:
+    #00c6ff;
+
+  text-shadow:
+    0 0 12px
+    rgba(0,198,255,.25);
+}
+
+
+/* ==========================================
+   DIVIDER
+========================================== */
+
+.brand-line {
+
+  position:
+    relative;
+
+  width:
+    230px;
+
+  height:
+    1px;
+
+  margin:
+    15px auto 18px;
+
+  background:
+    rgba(255,255,255,.08);
+
+  overflow:
+    hidden;
+}
+
+.brand-line::after {
+
+  content: "";
+
+  position:
+    absolute;
+
+  left:
+    -40%;
+
+  top: 0;
+
+  width:
+    40%;
+
+  height:
+    100%;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #00c6ff,
+      transparent
+    );
+
+  animation:
+    lineScan
+    2s
+    linear
+    infinite;
+}
+
+@keyframes lineScan {
+
+  to {
+
+    left:
+      100%;
+  }
+
+}
+
+
+/* ==========================================
+   SUBTITLE
+========================================== */
+
+.subtitle {
+
+  color:
+    #9fb5c8;
+
+  font-size:
+    13px;
+
+  letter-spacing:
+    .4px;
+
+  margin-bottom:
+    30px;
+}
+
+
+/* ==========================================
+   CONNECTION CORE
+========================================== */
+
+.connection-core {
+
+  position:
+    relative;
+
+  width:
+    100%;
+
+  height:
+    58px;
+
+  margin-bottom:
+    4px;
+}
+
+
+/* NODE */
+
+.node {
+
+  position:
+    absolute;
+
+  top:
+    50%;
+
+  width:
+    7px;
+
+  height:
+    7px;
+
+  margin-top:
+    -3px;
+
+  border-radius:
+    50%;
+
+  background:
+    #00e676;
+
+  box-shadow:
+    0 0 10px
+    #00e676;
+}
+
+.node.left {
+  left:
+    15%;
+}
+
+.node.right {
+  right:
+    15%;
+}
+
+
+/* CORE */
+
+.core {
+
+  position:
+    absolute;
+
+  left:
+    50%;
+
+  top:
+    50%;
+
+  transform:
+    translate(-50%,-50%);
+
+  width:
+    28px;
+
+  height:
+    28px;
+
+  border:
+    1px solid
+    rgba(0,198,255,.7);
+
+  border-radius:
+    50%;
+
+  box-shadow:
+    0 0 20px
+    rgba(0,198,255,.35);
+
+  animation:
+    corePulse
+    1.6s
+    ease-in-out
+    infinite;
+}
+
+.core::before {
+
+  content: "";
+
+  position:
+    absolute;
+
+  inset:
+    6px;
+
+  border-radius:
+    50%;
+
+  background:
+    #00c6ff;
+
+  box-shadow:
+    0 0 15px
+    #00c6ff;
+}
+
+@keyframes corePulse {
+
+  0%,
+  100% {
+
+    transform:
+      translate(-50%,-50%)
+      scale(1);
+  }
+
+  50% {
+
+    transform:
+      translate(-50%,-50%)
+      scale(1.18);
+  }
+
+}
+
+
+/* CONNECTION LINE */
+
+.connection-line {
+
+  position:
+    absolute;
+
+  left:
+    16%;
+
+  right:
+    16%;
+
+  top:
+    50%;
+
+  height:
+    1px;
+
+  background:
+    rgba(0,198,255,.18);
+}
+
+.connection-line::after {
+
+  content: "";
+
+  position:
+    absolute;
+
+  left:
+    -20%;
+
+  top:
+    -2px;
+
+  width:
+    20%;
+
+  height:
+    5px;
+
+  border-radius:
+    50%;
+
+  background:
+    #00c6ff;
+
+  box-shadow:
+    0 0 12px
+    #00c6ff;
+
+  animation:
+    dataFlow
+    1.5s
+    linear
+    infinite;
+}
+
+@keyframes dataFlow {
+
+  from {
+    left:
+      -20%;
+  }
+
+  to {
+    left:
+      100%;
+  }
+
+}
+
+
+/* ==========================================
+   STATUS
+========================================== */
+
+.status {
+
+  display:
+    flex;
+
+  justify-content:
+    center;
+
+  align-items:
+    center;
+
+  gap:
+    10px;
+
+  font-size:
+    14px;
+
+  color:
+    #dceaf5;
+
+  margin-bottom:
+    15px;
+}
+
+.status-dot {
+
+  width:
+    8px;
+
+  height:
+    8px;
+
+  border-radius:
+    50%;
+
+  background:
+    #00e676;
+
+  box-shadow:
+    0 0 7px
+    #00e676;
+
+  animation:
+    blink
+    1s
+    infinite;
+}
+
+
+/* ==========================================
+   PROGRESS
+========================================== */
+
+.progress-wrapper {
+
+  width:
+    100%;
+
+  height:
+    5px;
+
+  background:
+    rgba(255,255,255,.08);
+
+  border-radius:
+    20px;
+
+  overflow:
+    hidden;
+
+  box-shadow:
+    inset 0 0 5px
+    rgba(0,0,0,.5);
+}
+
+.progress {
+
+  width:
+    0%;
+
+  height:
+    100%;
+
+  border-radius:
+    20px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #008cff,
+      #00c6ff,
+      #63e6ff
+    );
+
+  box-shadow:
+    0 0 15px
+    rgba(0,198,255,.7);
+
+  animation:
+    loading
+    3.8s
+    cubic-bezier(.2,.8,.2,1)
+    forwards;
+}
+
+
+/* ==========================================
+   PERCENTAGE
+========================================== */
+
+.percentage {
+
+  margin-top:
+    12px;
+
+  font-size:
+    11px;
+
+  color:
+    #7892a6;
+
+  letter-spacing:
+    1px;
+}
+
+
+/* ==========================================
+   SERVER
+========================================== */
+
+.server {
+
+  margin-top:
+    28px;
+
+  font-size:
+    9px;
+
+  color:
+    #526b7b;
+
+  letter-spacing:
+    1.5px;
+}
+
+.server span {
+
+  color:
+    #7293a6;
+}
+
+
+/* ==========================================
+   ANIMATIONS
+========================================== */
+
+@keyframes loading {
+
+  0% {
+    width: 0%;
+  }
+
+  20% {
+    width: 16%;
+  }
+
+  40% {
+    width: 38%;
+  }
+
+  60% {
+    width: 61%;
+  }
+
+  80% {
+    width: 83%;
+  }
+
+  100% {
+    width: 100%;
+  }
+
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: .25;
+  }
+
+}
+
+
+/* ==========================================
+   DOTS
+========================================== */
+
+.dots::after {
+
+  content: "";
+
+  animation:
+    dots
+    1.4s
+    infinite;
+}
+
+@keyframes dots {
+
+  0% {
+    content: "";
+  }
+
+  25% {
+    content: ".";
+  }
+
+  50% {
+    content: "..";
+  }
+
+  75% {
+    content: "...";
+  }
+
+  100% {
+    content: "";
+  }
+
+}
+
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width:480px) {
+
+  .mortar-logo {
+
+    width:
+      125px;
+
+    height:
+      60px;
+  }
+
+  .brand-mark {
+
+    width:
+      54px;
+
+    height:
+      54px;
+  }
+
+  .brand-main {
+
+    font-size:
+      21px;
+  }
+
+  .subtitle {
+
+    font-size:
+      12px;
+  }
+
+  .loading-container {
+
+    width:
+      86%;
+  }
+
+}
+
+</style>
 </head>
+
+
 <body>
-  <p>Mengarahkan ke FG Logistics...</p>
-  <p>
-    Jika tidak otomatis,
-    <a href="https://fg-logistics.github.io/FG/">klik di sini</a>.
-  </p>
+
+
+<!-- DIGITAL GRID -->
+
+<div class="background-grid"></div>
+
+
+<!-- PARTICLES -->
+
+<div class="particles">
+
+  <div class="particle"
+       style="left:8%;--duration:8s;--delay:0s;--move:40px;"></div>
+
+  <div class="particle"
+       style="left:18%;--duration:11s;--delay:2s;--move:-30px;"></div>
+
+  <div class="particle"
+       style="left:30%;--duration:9s;--delay:1s;--move:60px;"></div>
+
+  <div class="particle"
+       style="left:42%;--duration:13s;--delay:3s;--move:-50px;"></div>
+
+  <div class="particle"
+       style="left:55%;--duration:10s;--delay:1.5s;--move:40px;"></div>
+
+  <div class="particle"
+       style="left:67%;--duration:12s;--delay:4s;--move:-60px;"></div>
+
+  <div class="particle"
+       style="left:78%;--duration:9s;--delay:2.5s;--move:30px;"></div>
+
+  <div class="particle"
+       style="left:90%;--duration:14s;--delay:5s;--move:-40px;"></div>
+
+</div>
+
+
+<!-- MAIN -->
+
+<div class="loading-container">
+
+
+  <!-- MORTAR LOGO -->
+
+  <div class="mortar-logo">
+
+    <img
+      src="https://encrypted-tbn0.gstatic.com/images?q=ANd9GcRns0gLXSUwFnjM8Zc9PmYWTwZUGtFuWZw5X5zkhKicHA&s=10"
+      alt="MORTAR INDONESIA"
+    >
+
+  </div>
+
+
+  <!-- FG LOGISTICS -->
+
+  <div class="brand">
+
+    <div class="brand-mark">
+
+      <span>FG</span>
+
+    </div>
+
+    <div class="brand-name">
+
+      <div class="brand-main">
+
+        FG <span>LOGISTICS</span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- DIVIDER -->
+
+  <div class="brand-line"></div>
+
+
+  <!-- DESCRIPTION -->
+
+  <div class="subtitle">
+
+    Finished Goods Logistics Intelligence
+
+  </div>
+
+
+  <!-- CONNECTION CORE -->
+
+  <div class="connection-core">
+
+    <div class="connection-line"></div>
+
+    <div class="node left"></div>
+
+    <div class="core"></div>
+
+    <div class="node right"></div>
+
+  </div>
+
+
+  <!-- STATUS -->
+
+  <div class="status">
+
+    <div class="status-dot"></div>
+
+    <span id="statusText">
+
+      Establishing secure connection<span class="dots"></span>
+
+    </span>
+
+  </div>
+
+
+  <!-- PROGRESS -->
+
+  <div class="progress-wrapper">
+
+    <div
+      class="progress"
+      id="progressBar">
+    </div>
+
+  </div>
+
+
+  <!-- PERCENTAGE -->
+
+  <div
+    class="percentage"
+    id="percentage">
+
+    INITIALIZING • 0%
+
+  </div>
+
+
+  <!-- SERVER -->
+
+  <div class="server">
+
+    SECURE CONNECTION
+    &nbsp;•&nbsp;
+
+    <span>
+      FG-LOGISTICS.GITHUB.IO
+    </span>
+
+  </div>
+
+
+</div>
+
+
+<script>
+
+
+/* ==========================================
+   TARGET APPLICATION
+========================================== */
+
+const targetURL =
+  "https://fg-logistics.github.io/FG/";
+
+
+const percentage =
+  document.getElementById(
+    "percentage"
+  );
+
+
+const statusText =
+  document.getElementById(
+    "statusText"
+  );
+
+
+let progress = 0;
+
+
+/* ==========================================
+   PROGRESS ENGINE
+========================================== */
+
+const interval =
+  setInterval(() => {
+
+    progress +=
+      Math.floor(
+        Math.random() * 4
+      ) + 2;
+
+
+    if (
+      progress >= 100
+    ) {
+
+      progress = 100;
+
+      clearInterval(
+        interval
+      );
+
+    }
+
+
+    percentage.textContent =
+      "CONNECTING • " +
+      progress +
+      "%";
+
+
+    /* STATUS STAGES */
+
+    if (
+      progress >= 25 &&
+      progress < 55
+    ) {
+
+      statusText.innerHTML =
+        "Authenticating server<span class='dots'></span>";
+
+    }
+
+
+    if (
+      progress >= 55 &&
+      progress < 80
+    ) {
+
+      statusText.innerHTML =
+        "Synchronizing logistics system<span class='dots'></span>";
+
+    }
+
+
+    if (
+      progress >= 80 &&
+      progress < 100
+    ) {
+
+      statusText.innerHTML =
+        "Loading intelligence dashboard<span class='dots'></span>";
+
+    }
+
+
+    if (
+      progress >= 100
+    ) {
+
+      statusText.textContent =
+        "Secure connection established";
+
+      percentage.textContent =
+        "CONNECTED • 100%";
+
+    }
+
+  }, 100);
+
+
+/* ==========================================
+   REDIRECT
+========================================== */
+
+setTimeout(() => {
+
+  window.location.replace(
+    targetURL
+  );
+
+}, 4200);
+
+
+</script>
+
+
 </body>
 </html>
